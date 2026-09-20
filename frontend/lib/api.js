@@ -137,6 +137,19 @@ export function threadsStreamUrl(lessonId) {
   return `${API_BASE}/api/threads/stream${lessonId ? `?lessonId=${lessonId}` : ""}`;
 }
 
+/* AI doubt helper (PRD 5.6) */
+
+export async function askAi({ lessonId, exerciseId, question, code }) {
+  return apiFetch("/api/ai/help", {
+    method: "POST",
+    body: { lessonId, exerciseId, question, code },
+  });
+}
+
+export async function aiStatus() {
+  return apiFetch("/api/ai/status", { method: "GET" });
+}
+
 /* Profile — customization + public showcase */
 
 export async function updateMe(payload) {

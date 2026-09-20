@@ -14,6 +14,7 @@ import { useProgressStore } from "@/stores/progressStore";
 import { runCode, compareOutput } from "@/lib/runner";
 import { playCorrect, playWrong, playComplete, isMuted, toggleMuted } from "@/lib/sound";
 import { Confetti } from "@/components/lesson/Confetti";
+import { AiHelper } from "@/components/lesson/AiHelper";
 import { Volume2, VolumeX, Flame } from "lucide-react";
 
 /* Single-screen lesson runner — one exercise at a time, distraction-free.
@@ -313,6 +314,9 @@ export function LessonRunner({ lesson, exercises }) {
 
         <div className="mt-4">
           <HintPanel hints={current.hints} exercise={current} />
+        </div>
+        <div className="mt-3">
+          <AiHelper lesson={lesson} exercise={current} value={answers[current._id]} />
         </div>
       </div>
 

@@ -93,8 +93,8 @@ The monorepo is organized as two separate folders under one repository: `fronten
 │   │   ├── index.ts       # Entry point — connects DB, starts server
 │   │   ├── app.ts         # Express app factory (middleware, routes, error handler)
 │   │   ├── config/        # env.ts, db.ts
-│   │   ├── routes/        # auth.ts, courses.ts, lessons.ts, progress.ts, community.ts, users.ts
-│   │   ├── models/        # User, Course, Unit, Lesson, Exercise, Progress, XPEvent, Thread, Reply, Report
+│   │   ├── routes/        # auth.ts, courses.ts, lessons.ts, progress.ts, community.ts, users.ts, ai.ts
+│   │   ├── models/        # User, Course, Unit, Lesson, Exercise, Progress, XPEvent, Thread, Reply, Report, AiUsage, AiCache
 │   │   ├── middleware/    # auth.ts (requireAuth, optionalAuth)
 │   │   ├── validators/    # auth.ts (Zod schemas)
 │   │   ├── utils/         # jwt.ts, streak.ts
@@ -310,6 +310,8 @@ Design rules:
 | `PATCH` | `/api/users/me` | Yes | Edit own profile (name, bio, country, timezone, avatar URL, privacy) |
 | `POST` | `/api/users/me/avatar` | Yes | Secure Appwrite avatar upload (2MB image) |
 | `GET` | `/api/users/u/:username` | No | Public showcase (email never exposed; minimal when private) |
+| `GET` | `/api/ai/status` | Yes | AI budget remaining + configured flag |
+| `POST` | `/api/ai/help` | Yes | Hint-first doubt answer (lesson/code context, cached, budgeted) |
 
 ### 6.3 Middleware
 

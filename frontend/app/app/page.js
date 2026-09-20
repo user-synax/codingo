@@ -147,8 +147,8 @@ export default async function AppHome() {
               <p className="font-codingo-sans text-[12px] font-bold uppercase tracking-[0.053em] text-pencil-gray sm:text-[13px]">
                 {s.label}
               </p>
-              <span className={`flex h-8 w-8 items-center justify-center rounded-[10px] ${s.tile}`} aria-hidden="true">
-                <s.icon className="h-4 w-4" strokeWidth={2.4} />
+              <span className={`flex h-11 w-11 items-center justify-center rounded-[12px] ${s.tile}`} aria-hidden="true">
+                <s.icon className="h-[22px] w-[22px]" strokeWidth={2.2} />
               </span>
             </div>
             <p className="mt-2 truncate font-codingo-sans text-[22px] font-bold leading-none text-charcoal sm:text-[28px]">

@@ -9,6 +9,7 @@ import { Report } from "../models/Report.js";
 import { User } from "../models/User.js";
 import { Lesson } from "../models/Lesson.js";
 import { emitCommunityEvent, subscribeCommunityEvents } from "../utils/communityEvents.js";
+import { scheduleAiFirstReply } from "../utils/ai.js";
 
 const router = Router();
 
@@ -178,6 +179,7 @@ router.post("/", writeLimiter, requireAuth, async (req: AuthedRequest, res) => {
   const lessons = await lessonTitleMap([plain.lessonId].filter(Boolean));
   const thread = serializeThread(plain, authors, lessons, userId);
   emitCommunityEvent({ type: "thread", thread: thread as unknown as Record<string, unknown> });
+  scheduleAiFirstReply({ threadId: String(doc._id) });
   return res.status(201).json({ thread });
 });
 

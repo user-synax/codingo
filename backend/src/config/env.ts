@@ -20,6 +20,19 @@ export const env = {
   appwriteProjectId: process.env.APPWRITE_PROJECT_ID ?? "",
   appwriteBucketId: process.env.APPWRITE_BUCKET_ID ?? "",
   appwriteApiKey: process.env.APPWRITE_API_KEY ?? "",
+  // AI doubt helper (PRD 5.6) — Groq primary, OpenRouter optional fallback.
+  groqApiKey: process.env.GROQ_API_KEY ?? "",
+  openrouterApiKey: process.env.OPENROUTER_API_KEY ?? "",
+  groqModel: process.env.GROQ_MODEL ?? "openai/gpt-oss-20b",
+  openrouterModel: process.env.OPENROUTER_MODEL ?? "meta-llama/llama-3.3-70b-instruct:free",
+  aiDailyLimit: (() => {
+    const v = Number(process.env.AI_DAILY_LIMIT);
+    return Number.isFinite(v) && v > 0 ? v : 20;
+  })(),
+  aiAutoReplyDelayMs: (() => {
+    const v = Number(process.env.AI_AUTO_REPLY_DELAY_MS);
+    return Number.isFinite(v) && v > 0 ? v : 3 * 60 * 1000;
+  })(),
 } as const;
 
 export const isAppwriteConfigured =
