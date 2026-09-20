@@ -1,10 +1,18 @@
 "use client";
 
+import { useMemo } from "react";
+import { shuffled } from "@/lib/shuffle";
+
 export function FillBlank({ exercise, value, onChange, showResult }) {
   const code = exercise.content?.code ?? "";
   const opts = exercise.content?.options ?? [];
   const answer = exercise.solution?.answer ?? exercise.content?.blank;
   const isCorrect = showResult ? value === answer : null;
+
+  const displayOpts = useMemo(() => {
+    const list = exercise.content?.options ?? [];
+    return shuffled(list, `fill:${String(exercise?._id ?? exercise?.prompt ?? "")}`);
+  }, [exercise]);
 
   // Replace ___ with blank UI
   const parts = code.split("___");
@@ -26,7 +34,7 @@ export function FillBlank({ exercise, value, onChange, showResult }) {
       </div>
 
       <div className="flex flex-wrap gap-2">
-        {opts.map((opt) => {
+        {displayOpts.map((opt) => {
           const selected = value === opt;
           const isRight = showResult && opt === answer;
           const isWrong = showResult && selected && opt !== answer;

@@ -53,7 +53,7 @@ function HintPanel({ hints, exercise }) {
   );
 }
 
-export function LessonRunner({ lesson, exercises }) {
+export function LessonRunner({ lesson, exercises, nextLesson }) {
   const router = useRouter();
   const save = useProgressStore((s) => s.save);
   const [idx, setIdx] = useState(0);
@@ -119,6 +119,22 @@ export function LessonRunner({ lesson, exercises }) {
 
   const isLast = idx === total - 1;
   const hasChecked = checked[current?._id] !== undefined;
+
+  // Starter snapshot per code exercise — Check stays locked until edited
+  function starterFor(ex) {
+    if (!ex) return "";
+    if (ex.type === "fix_bug") return ex.content?.code ?? "";
+    if (ex.type === "write_code") return ex.content?.starterCode ?? "";
+    return "";
+  }
+  const isCodeType = current?.type === "fix_bug" || current?.type === "write_code";
+  const codeEdited =
+    !isCodeType ||
+    (answers[current._id] !== undefined && answers[current._id] !== starterFor(current));
+  const needsAnswer =
+    answers[current?._id] === undefined ||
+    answers[current?._id] === "" ||
+    (Array.isArray(answers[current?._id]) && answers[current._id].length === 0);
 
   function handleValue(v) {
     setAnswers((s) => ({ ...s, [current._id]: v }));
@@ -259,8 +275,17 @@ export function LessonRunner({ lesson, exercises }) {
         ) : null}
 
         <div className="flex w-full max-w-[480px] flex-col gap-3 sm:flex-row">
-          <Button variant="primary" className="flex-1" onClick={() => router.push("/app/learn")}>
-            Back to path
+          {nextLesson ? (
+            <Button variant="primary" className="min-w-0 flex-1 truncate" href={`/app/learn/${nextLesson.id}`} title={`Next: ${nextLesson.title}`}>
+              Next: {nextLesson.title}
+            </Button>
+          ) : (
+            <Button variant="primary" className="flex-1" onClick={() => router.push("/app/learn")}>
+              Back to path
+            </Button>
+          )}
+          <Button variant="outline" className="flex-1 bg-paper-white" onClick={() => router.push("/app/learn")}>
+            {nextLesson ? "Path" : "Back to path"}
           </Button>
           <Button variant="outline" className="flex-1 bg-paper-white" onClick={() => router.push("/app")}>
             Dashboard
@@ -331,20 +356,21 @@ export function LessonRunner({ lesson, exercises }) {
         </Button>
         <div className="flex-1" />
         {!hasChecked ? (
-          <Button
-            variant="primary"
-            onClick={handleCheck}
-            disabled={
-              checking ||
-              (current.type !== "fix_bug" &&
-                current.type !== "write_code" &&
-                (answers[current._id] === undefined ||
-                  answers[current._id] === "" ||
-                  (Array.isArray(answers[current._id]) && answers[current._id].length === 0)))
-            }
-          >
-            {checking ? "Checking…" : "Check"}
-          </Button>
+          <div className="flex flex-col items-end gap-1.5">
+            {isCodeType && !codeEdited ? (
+              <p className="font-codingo-sans text-[12px] font-bold text-pencil-gray">
+                Edit the code above to enable Check
+              </p>
+            ) : null}
+            <Button
+              variant="primary"
+              onClick={handleCheck}
+              disabled={checking || (!isCodeType && needsAnswer) || (isCodeType && !codeEdited)}
+              title={isCodeType && !codeEdited ? "Edit the code first" : undefined}
+            >
+              {checking ? "Checking…" : "Check"}
+            </Button>
+          </div>
         ) : (
           <Button variant="primary" onClick={handleNext} disabled={saving}>
             {saving ? "Saving…" : isLast ? "Complete" : "Next"}

@@ -28,6 +28,21 @@ async function getProgress(lessonId) {
   return data?.progress ?? null;
 }
 
+async function getNextLesson(lessonId) {
+  const cookieStore = await cookies();
+  const res = await fetch(`${API_BASE}/api/courses`, {
+    headers: { Cookie: cookieStore.toString() },
+    cache: "no-store",
+  });
+  if (!res.ok) return null;
+  const data = await res.json();
+  const all = (data.courses ?? []).flatMap((c) => (c.units ?? []).flatMap((u) => u.lessons ?? []));
+  const idx = all.findIndex((l) => String(l._id) === String(lessonId));
+  if (idx < 0 || idx + 1 >= all.length) return null;
+  const next = all[idx + 1];
+  return { id: String(next._id), title: next.title };
+}
+
 function ViewOnlyExercise({ exercise, index }) {
   const typeLabel = {
     multiple_choice: "Multiple choice",
@@ -124,7 +139,7 @@ function ViewOnlyExercise({ exercise, index }) {
 
 export default async function LessonPage({ params }) {
   const { lessonId } = await params;
-  const [data, progress] = await Promise.all([getLesson(lessonId), getProgress(lessonId)]);
+  const [data, progress, nextLesson] = await Promise.all([getLesson(lessonId), getProgress(lessonId), getNextLesson(lessonId)]);
   if (!data) notFound();
 
   const { lesson, exercises } = data;
@@ -198,7 +213,7 @@ export default async function LessonPage({ params }) {
           </div>
         </div>
       ) : (
-        <LessonRunner lesson={lesson} exercises={exercises} />
+        <LessonRunner lesson={lesson} exercises={exercises} nextLesson={nextLesson} />
       )}
     </div>
   );

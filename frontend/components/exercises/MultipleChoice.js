@@ -1,27 +1,41 @@
 "use client";
 
+import { useMemo } from "react";
+import { shuffled } from "@/lib/shuffle";
+
 /* Multiple choice — concept check. Beautiful per design.md: Paper White cards,
    12px radius, 2px border, green for correct, destructive for wrong.
-   Uses transitions-dev error-shake (12) on wrong Check. */
+   Uses transitions-dev error-shake (12) on wrong Check.
+   Options are seeded-shuffled per exercise; the stored value stays the
+   ORIGINAL index so checking needs no changes. */
 
 export function MultipleChoice({ exercise, value, onChange, showResult }) {
   const opts = exercise.content?.options ?? [];
   const correct = exercise.solution?.correctIndex;
   const isCorrect = showResult ? value === correct : null;
 
+  // [{ opt, orig }] shuffled once per exercise — value keeps original index
+  const display = useMemo(() => {
+    const list = exercise.content?.options ?? [];
+    return shuffled(
+      list.map((opt, orig) => ({ opt, orig })),
+      `mcq:${String(exercise?._id ?? exercise?.prompt ?? "")}`,
+    );
+  }, [exercise]);
+
   return (
     <div className="flex flex-col gap-4">
       <h2 className="font-codingo-sans text-[19px] font-bold leading-[1.4] text-charcoal">{exercise.prompt}</h2>
       <div className="flex flex-col gap-2.5">
-        {opts.map((opt, idx) => {
-          const selected = value === idx;
-          const isRight = showResult && idx === correct;
-          const isWrongPick = showResult && selected && idx !== correct;
+        {display.map(({ opt, orig }) => {
+          const selected = value === orig;
+          const isRight = showResult && orig === correct;
+          const isWrongPick = showResult && selected && orig !== correct;
           return (
             <button
-              key={idx}
+              key={orig}
               type="button"
-              onClick={() => !showResult && onChange(idx)}
+              onClick={() => !showResult && onChange(orig)}
               disabled={showResult}
               aria-pressed={selected}
               className={

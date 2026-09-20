@@ -76,7 +76,7 @@ router.post("/", requireAuth, async (req: AuthedRequest, res) => {
     const lessonBonus = 10;
     const perfectBonus = score === 100 ? 5 : 0;
     xpAwarded = perExercise + lessonBonus + perfectBonus;
-    // Cap to avoid abuse (max 40 for 5 exercises)
+    // Cap to avoid abuse (scales with lesson length)
     const maxXp = total * 5 + 15;
     xpAwarded = Math.min(xpAwarded, maxXp);
 

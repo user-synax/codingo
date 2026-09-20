@@ -1,12 +1,22 @@
 "use client";
 
-/* Predict output — snippet + choose or type. Reuses multiple_choice styling. */
+import { useMemo } from "react";
+import { shuffled } from "@/lib/shuffle";
+
+/* Predict output — snippet + choose or type. Reuses multiple_choice styling.
+   Options are seeded-shuffled per exercise; value is the option string,
+   so checking needs no changes. */
 
 export function PredictOutput({ exercise, value, onChange, showResult }) {
   const snippet = exercise.content?.snippet ?? "";
   const opts = exercise.content?.options ?? null;
   const answer = exercise.solution?.answer ?? "";
   const isCorrect = showResult ? String(value).trim() === String(answer).trim() : null;
+
+  const displayOpts = useMemo(() => {
+    const list = exercise.content?.options ?? null;
+    return list ? shuffled(list, `predict:${String(exercise?._id ?? exercise?.prompt ?? "")}`) : null;
+  }, [exercise]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -23,7 +33,7 @@ export function PredictOutput({ exercise, value, onChange, showResult }) {
 
       {opts ? (
         <div className="flex flex-col gap-2">
-          {opts.map((opt) => {
+          {displayOpts.map((opt) => {
             const selected = value === opt;
             const isRight = showResult && opt === answer;
             const isWrong = showResult && selected && opt !== answer;

@@ -44,7 +44,7 @@ A free web app for learning programming through short, gamified lessons with the
 ### 5.1 Learning Path
 - One course for the MVP language, structured as Course > Unit > Lesson > Exercises.
 - Visual, vertical skill path with lesson nodes (locked, available, completed) and unit checkpoints.
-- Around 30 lessons at launch. Each lesson has 5 to 8 exercises.
+- Around 30 lessons at launch. Each lesson has 5 to 10 exercises.
 - Progress is saved per user and resumes where the learner left off.
 
 ### 5.2 Exercise Types

@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { shuffled } from "@/lib/shuffle";
 
-/* Arrange — tap to order lines. Uses transitions-dev card-resize for movement. */
+/* Arrange — tap to order lines. Blocks are seeded-shuffled per exercise
+   (stable mid-lesson), so left-to-right tapping never wins by itself. */
 
 export function ArrangeBlocks({ exercise, value, onChange, showResult }) {
   const blocks = exercise.content?.blocks ?? [];
@@ -10,7 +12,15 @@ export function ArrangeBlocks({ exercise, value, onChange, showResult }) {
   const ordered = value ?? [];
   const isCorrect = showResult ? JSON.stringify(ordered) === JSON.stringify(solutionOrder) : null;
 
-  const available = blocks.map((_, i) => i).filter((i) => !ordered.includes(i));
+  // Full pool shuffled once per exercise — filter chosen, never reshuffle
+  const pool = useMemo(() => {
+    const list = exercise.content?.blocks ?? [];
+    return shuffled(
+      list.map((_, i) => i),
+      `arrange:${String(exercise?._id ?? exercise?.prompt ?? "")}`,
+    );
+  }, [exercise]);
+  const available = pool.filter((i) => !ordered.includes(i));
 
   function toggle(idx) {
     if (showResult) return;
