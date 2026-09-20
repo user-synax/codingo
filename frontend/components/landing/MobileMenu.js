@@ -56,15 +56,14 @@ export function MobileMenu({ links }) {
               </SheetClose>
             ))}
           </nav>
-          {/* TODO: point to /login and /signup once auth ships (PRD milestone 1). */}
           <div className="flex flex-col gap-3">
             <SheetClose asChild>
-              <Button variant="outline" href="#login" className="w-full">
+              <Button variant="outline" href="/login" className="w-full">
                 Log in
               </Button>
             </SheetClose>
             <SheetClose asChild>
-              <Button variant="primary" href="#get-started" className="w-full">
+              <Button variant="primary" href="/signup" className="w-full">
                 Get started
               </Button>
             </SheetClose>

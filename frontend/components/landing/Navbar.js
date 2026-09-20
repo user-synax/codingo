@@ -33,11 +33,10 @@ export function Navbar() {
               {link.label}
             </Link>
           ))}
-          {/* TODO: point to /login and /signup once auth ships (PRD milestone 1). */}
-          <Button variant="outline" size="sm" href="#login">
+          <Button variant="outline" size="sm" href="/login">
             Log in
           </Button>
-          <Button variant="primary" size="sm" href="#get-started">
+          <Button variant="primary" size="sm" href="/signup">
             Get started
           </Button>
         </nav>

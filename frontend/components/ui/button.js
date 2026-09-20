@@ -36,12 +36,12 @@ const buttonVariants = cva(
   },
 );
 
-function Button({ className, variant, size, href, ...props }) {
+function Button({ className, variant, size, href, type = "button", ...props }) {
   const classes = cn(buttonVariants({ variant, size }), className);
   if (href) {
     return <a href={href} className={classes} {...props} />;
   }
-  return <button type="button" className={classes} {...props} />;
+  return <button type={type} className={classes} {...props} />;
 }
 
 export { Button, buttonVariants };

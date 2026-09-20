@@ -281,6 +281,27 @@
   animation-delay: calc(var(--stagger-stagger) * 4);
 }
 
+/* ---- Auth card: smooth mount (stagger tokens, no JS).
+   500ms rise + blur, same ease as hero. Padding itself is
+   static (28px / 40px) so the "smooth" comes from the card
+   entering softly and from the 40px inner breathing room. ---- */
+@keyframes auth-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+    filter: blur(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+.auth-card {
+  animation: auth-card-in var(--stagger-dur) var(--stagger-ease);
+  will-change: transform, opacity, filter;
+}
+
 /* ---- Mobile Sheet: slide + fade + cross-blur.
    Panel-reveal tokens (07): 400ms open / 350ms close /
    smooth-out. Overlay fades faster (250ms in / 150ms out). ---- */
@@ -341,7 +362,8 @@
   .codingo-btn,
   .nav-link,
   .sheet-overlay,
-  .sheet-content-right {
+  .sheet-content-right,
+  .auth-card {
     transition: none !important;
   }
   .codingo-btn:hover,
@@ -352,7 +374,8 @@
   .sheet-overlay[data-state="open"],
   .sheet-overlay[data-state="closed"],
   .sheet-content-right[data-state="open"],
-  .sheet-content-right[data-state="closed"] {
+  .sheet-content-right[data-state="closed"],
+  .auth-card {
     animation: none !important;
   }
   .hero-reveal {

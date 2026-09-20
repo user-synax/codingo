@@ -20,11 +20,10 @@ export function Hero() {
             helps you get unstuck.
           </p>
           <div className="hero-reveal hero-reveal--3 flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
-            {/* TODO: point to /signup and /login once auth ships (PRD milestone 1). */}
-            <Button variant="primary" href="#get-started">
+            <Button variant="primary" href="/signup">
               Get started
             </Button>
-            <Button variant="outline" href="#login">
+            <Button variant="outline" href="/login">
               I already have an account
             </Button>
           </div>
