@@ -10,6 +10,7 @@ export const metadata = {
 export default async function AppLayout({ children }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
+  if (!user.onboardingCompleted) redirect("/onboarding");
 
   return (
     <div className="min-h-screen bg-paper-white font-codingo-sans text-charcoal">

@@ -15,6 +15,12 @@ export interface IUser extends Document {
   };
   timezone: string;
   badges: string[];
+  // Onboarding — added per mandatory flow after signup
+  age?: number | null;
+  country?: string | null;
+  countryCode?: string | null;
+  language?: string | null; // e.g. "javascript"
+  onboardingCompleted?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -53,6 +59,12 @@ const UserSchema = new Schema<IUser>(
     },
     timezone: { type: String, default: "Asia/Kolkata" },
     badges: { type: [String], default: [] },
+    // Onboarding
+    age: { type: Number, default: null, min: 13, max: 80 },
+    country: { type: String, default: null, trim: true },
+    countryCode: { type: String, default: null, trim: true, uppercase: true, maxlength: 2 },
+    language: { type: String, default: null, trim: true, lowercase: true },
+    onboardingCompleted: { type: Boolean, default: false },
   },
   { timestamps: true },
 );

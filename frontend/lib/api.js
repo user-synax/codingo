@@ -51,3 +51,10 @@ export async function fetchMe() {
 export async function logoutUser() {
   return apiFetch("/api/auth/logout", { method: "POST" });
 }
+
+export async function patchOnboarding(payload) {
+  return apiFetch("/api/auth/onboarding", {
+    method: "PATCH",
+    body: payload,
+  });
+}

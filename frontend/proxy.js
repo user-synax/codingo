@@ -15,8 +15,8 @@ export default function proxy(req) {
     return NextResponse.redirect(url);
   }
 
-  // Guests shouldn't see the app
-  if (!isAuthed && pathname.startsWith("/app")) {
+  // Guests shouldn't see the app or onboarding
+  if (!isAuthed && (pathname.startsWith("/app") || pathname.startsWith("/onboarding"))) {
     const url = req.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
@@ -26,5 +26,5 @@ export default function proxy(req) {
 }
 
 export const config = {
-  matcher: ["/", "/app/:path*", "/login", "/signup", "/forgot-password"],
+  matcher: ["/", "/app/:path*", "/onboarding", "/login", "/signup", "/forgot-password"],
 };

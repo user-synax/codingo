@@ -109,11 +109,11 @@ export function LoginForm() {
       }
 
       setDone(true);
-      // Small success feedback then redirect to home (auth is httpOnly cookie, no token in JS)
+      const needsOnboarding = data?.user && !data.user.onboardingCompleted;
       window.setTimeout(() => {
-        router.push("/");
+        router.push(needsOnboarding ? "/onboarding" : "/app");
         router.refresh();
-      }, 700);
+      }, 600);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Network error. Is the backend running at " + API_BASE + "?";
       setServerError(msg);

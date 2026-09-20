@@ -114,9 +114,9 @@ export function SignupForm() {
 
       setDone(true);
       window.setTimeout(() => {
-        router.push("/login");
+        router.push("/onboarding");
         router.refresh();
-      }, 800);
+      }, 600);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Network error. Is the backend running at " + API_BASE + "?";
       setServerError(msg);
@@ -301,7 +301,7 @@ export function SignupForm() {
           aria-live="polite"
           className="rounded-[12px] border-2 border-faded-gray bg-storybook-green px-4 py-3 text-center font-codingo-sans text-[13px] font-medium leading-[1.23] text-charcoal"
         >
-          Account created — redirecting to log in…
+          Account created — taking you to onboarding…
         </p>
       ) : null}
 
