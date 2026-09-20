@@ -4,6 +4,9 @@ import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import { env } from "./config/env.js";
 import authRouter from "./routes/auth.js";
+import coursesRouter from "./routes/courses.js";
+import lessonsRouter from "./routes/lessons.js";
+import progressRouter from "./routes/progress.js";
 
 export function createApp() {
   const app = express();
@@ -30,6 +33,9 @@ export function createApp() {
   });
 
   app.use("/api/auth", authRouter);
+  app.use("/api/courses", coursesRouter);
+  app.use("/api/lessons", lessonsRouter);
+  app.use("/api/progress", progressRouter);
 
   // 404
   app.use((_req, res) => {

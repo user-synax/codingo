@@ -58,3 +58,22 @@ export async function patchOnboarding(payload) {
     body: payload,
   });
 }
+
+export async function fetchCourses() {
+  return apiFetch("/api/courses", { method: "GET" });
+}
+
+export async function fetchLesson(lessonId) {
+  return apiFetch(`/api/lessons/${lessonId}`, { method: "GET" });
+}
+
+export async function fetchProgressMe() {
+  return apiFetch("/api/progress/me", { method: "GET" });
+}
+
+export async function saveProgress({ lessonId, score, completed, firstTry }) {
+  return apiFetch("/api/progress", {
+    method: "POST",
+    body: { lessonId, score, completed, firstTry },
+  });
+}
