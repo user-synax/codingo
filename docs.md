@@ -93,7 +93,7 @@ The monorepo is organized as two separate folders under one repository: `fronten
 │   │   ├── index.ts       # Entry point — connects DB, starts server
 │   │   ├── app.ts         # Express app factory (middleware, routes, error handler)
 │   │   ├── config/        # env.ts, db.ts
-│   │   ├── routes/        # auth.ts, courses.ts, lessons.ts, progress.ts, community.ts
+│   │   ├── routes/        # auth.ts, courses.ts, lessons.ts, progress.ts, community.ts, users.ts
 │   │   ├── models/        # User, Course, Unit, Lesson, Exercise, Progress, XPEvent, Thread, Reply, Report
 │   │   ├── middleware/    # auth.ts (requireAuth, optionalAuth)
 │   │   ├── validators/    # auth.ts (Zod schemas)
@@ -135,6 +135,8 @@ The monorepo is organized as two separate folders under one repository: `fronten
 | `/app/community` | Server | `app/app/community/page.js` | Live question feed — filter by lesson, sort, ask, upvote |
 | `/app/community/[threadId]` | Server | `app/app/community/[threadId]/page.js` | Thread detail — live replies, accept answer, report |
 | `/app/profile` | Server | `app/app/profile/page.js` | User profile page |
+| `/app/settings` | Server | `app/app/settings/page.js` | Profile customization (photo, bio, region, privacy) |
+| `/u/[username]` | Server | `app/u/[username]/page.js` | Public showcase — no login required |
 
 ### 5.3 Key Components
 
@@ -305,6 +307,9 @@ Design rules:
 | `POST` | `/api/threads/:id/accept` | Yes | Asker accepts an answer |
 | `POST` | `/api/threads/replies/:replyId/upvote` | Yes | Toggle reply upvote |
 | `POST` | `/api/threads/reports` | Yes | Report a thread/reply |
+| `PATCH` | `/api/users/me` | Yes | Edit own profile (name, bio, country, timezone, avatar URL, privacy) |
+| `POST` | `/api/users/me/avatar` | Yes | Secure Appwrite avatar upload (2MB image) |
+| `GET` | `/api/users/u/:username` | No | Public showcase (email never exposed; minimal when private) |
 
 ### 6.3 Middleware
 

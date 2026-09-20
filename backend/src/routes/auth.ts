@@ -34,6 +34,8 @@ function toPublicUser(doc: {
   countryCode?: string | null;
   language?: string | null;
   onboardingCompleted?: boolean;
+  bio?: string | null;
+  isPrivate?: boolean;
 }) {
   return {
     id: String(doc._id),
@@ -52,6 +54,8 @@ function toPublicUser(doc: {
     countryCode: doc.countryCode ?? null,
     language: doc.language ?? null,
     onboardingCompleted: Boolean(doc.onboardingCompleted),
+    bio: doc.bio ?? null,
+    isPrivate: Boolean(doc.isPrivate),
   };
 }
 

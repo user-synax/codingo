@@ -1,43 +1,26 @@
-// Appwrite avatar storage — stub until env vars are provided.
-// User said: "i'll add the env variables later."
-// Expected envs (when ready):
-//   NEXT_PUBLIC_APPWRITE_ENDPOINT, NEXT_PUBLIC_APPWRITE_PROJECT_ID,
-//   NEXT_PUBLIC_APPWRITE_BUCKET_ID (for avatars)
-// Until then, uploadAvatar just returns null and the onboarding
-// will store no avatar or keep the preview locally.
+/* Secure avatar upload — the file goes to OUR backend
+   (POST /api/users/me/avatar), which uploads to Appwrite Storage with
+   the server API key. The key never reaches the browser.
+   Same signature as before: resolves to a URL string, or null. */
 
-export const isAppwriteConfigured = Boolean(
-  process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT &&
-    process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID &&
-    process.env.NEXT_PUBLIC_APPWRITE_BUCKET_ID,
-);
+import { API_BASE } from "./api";
 
-/**
- * Upload avatar file to Appwrite Storage and return a public URL.
- * For now this is a stub — if not configured, returns null so the
- * caller can skip avatar and just send profile data without it.
- * When you add env vars, replace the body with real Appwrite SDK:
- *   import { Client, Storage, ID } from "appwrite"
- */
 export async function uploadAvatar(file) {
-  if (!isAppwriteConfigured) return null;
   if (!(file instanceof File)) return null;
+  if (!/^image\/(jpeg|png|webp|gif)$/.test(file.type)) return null;
+  if (file.size > 2 * 1024 * 1024) return null;
 
-  // TODO: Appwrite real upload — example:
-  // const client = new Client()
-  //   .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT)
-  //   .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID);
-  // const storage = new Storage(client);
-  // const res = await storage.createFile(
-  //   process.env.NEXT_PUBLIC_APPWRITE_BUCKET_ID,
-  //   ID.unique(),
-  //   file
-  // );
-  // return storage.getFileView(process.env.NEXT_PUBLIC_APPWRITE_BUCKET_ID, res.$id).toString();
-
-  // Stub: return a local object URL as placeholder so UI keeps working
   try {
-    return URL.createObjectURL(file);
+    const form = new FormData();
+    form.append("avatar", file);
+    const res = await fetch(`${API_BASE}/api/users/me/avatar`, {
+      method: "POST",
+      body: form,
+      credentials: "include",
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return typeof data?.avatar === "string" ? data.avatar : null;
   } catch {
     return null;
   }

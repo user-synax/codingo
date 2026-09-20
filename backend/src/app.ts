@@ -8,6 +8,7 @@ import coursesRouter from "./routes/courses.js";
 import lessonsRouter from "./routes/lessons.js";
 import progressRouter from "./routes/progress.js";
 import communityRouter from "./routes/community.js";
+import usersRouter from "./routes/users.js";
 
 export function createApp() {
   const app = express();
@@ -38,6 +39,7 @@ export function createApp() {
   app.use("/api/lessons", lessonsRouter);
   app.use("/api/progress", progressRouter);
   app.use("/api/threads", communityRouter);
+  app.use("/api/users", usersRouter);
 
   // 404
   app.use((_req, res) => {

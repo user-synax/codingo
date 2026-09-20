@@ -1,0 +1,32 @@
+/* Curated timezone list for the settings form — covers the learner base
+   with friendly city labels instead of the full ~400-zone database. */
+
+export const TIMEZONES = [
+  { value: "Asia/Kolkata", label: "India (IST)" },
+  { value: "Asia/Dubai", label: "Dubai (GST)" },
+  { value: "Asia/Singapore", label: "Singapore (SGT)" },
+  { value: "Asia/Kathmandu", label: "Kathmandu (NPT)" },
+  { value: "Asia/Dhaka", label: "Dhaka (BST)" },
+  { value: "Asia/Karachi", label: "Karachi (PKT)" },
+  { value: "Asia/Colombo", label: "Colombo (IST)" },
+  { value: "Asia/Bangkok", label: "Bangkok (ICT)" },
+  { value: "Asia/Jakarta", label: "Jakarta (WIB)" },
+  { value: "Asia/Manila", label: "Manila (PHT)" },
+  { value: "Asia/Tokyo", label: "Tokyo (JST)" },
+  { value: "Asia/Seoul", label: "Seoul (KST)" },
+  { value: "Asia/Shanghai", label: "Shanghai (CST)" },
+  { value: "Australia/Sydney", label: "Sydney (AEDT)" },
+  { value: "Pacific/Auckland", label: "Auckland (NZDT)" },
+  { value: "Europe/London", label: "London (GMT)" },
+  { value: "Europe/Berlin", label: "Berlin (CET)" },
+  { value: "Europe/Moscow", label: "Moscow (MSK)" },
+  { value: "Africa/Cairo", label: "Cairo (EET)" },
+  { value: "Africa/Lagos", label: "Lagos (WAT)" },
+  { value: "America/New_York", label: "New York (ET)" },
+  { value: "America/Chicago", label: "Chicago (CT)" },
+  { value: "America/Denver", label: "Denver (MT)" },
+  { value: "America/Los_Angeles", label: "Los Angeles (PT)" },
+  { value: "America/Toronto", label: "Toronto (ET)" },
+  { value: "America/Sao_Paulo", label: "Sao Paulo (BRT)" },
+  { value: "UTC", label: "UTC" },
+];

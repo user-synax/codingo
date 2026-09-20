@@ -8,14 +8,15 @@ export const API_BASE =
 
 export async function apiFetch(path, { method = "GET", body, headers, ...init } = {}) {
   const url = `${API_BASE}${path.startsWith("/") ? path : `/${path}`}`;
+  const isForm = typeof FormData !== "undefined" && body instanceof FormData;
   const res = await fetch(url, {
     method,
     headers: {
-      "Content-Type": "application/json",
+      ...(isForm ? {} : { "Content-Type": "application/json" }),
       ...headers,
     },
     credentials: "include",
-    body: body !== undefined ? JSON.stringify(body) : undefined,
+    body: body !== undefined ? (isForm ? body : JSON.stringify(body)) : undefined,
     ...init,
   });
 
@@ -134,4 +135,26 @@ export async function reportContent({ targetType, targetId, reason }) {
    cookie is sent with `withCredentials: true` (backend allows credentials). */
 export function threadsStreamUrl(lessonId) {
   return `${API_BASE}/api/threads/stream${lessonId ? `?lessonId=${lessonId}` : ""}`;
+}
+
+/* Profile — customization + public showcase */
+
+export async function updateMe(payload) {
+  return apiFetch("/api/users/me", {
+    method: "PATCH",
+    body: payload,
+  });
+}
+
+export async function uploadAvatarFile(file) {
+  const form = new FormData();
+  form.append("avatar", file);
+  return apiFetch("/api/users/me/avatar", {
+    method: "POST",
+    body: form,
+  });
+}
+
+export async function fetchPublicProfile(username) {
+  return apiFetch(`/api/users/u/${encodeURIComponent(username)}`, { method: "GET" });
 }

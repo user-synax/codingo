@@ -1,7 +1,9 @@
+import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth";
 import { getXpProgress } from "@/lib/level";
 import { BADGE_DEFS, ALL_BADGES } from "@/lib/badges";
-import { Flame, Trophy, Target, BookOpen, Star, Moon, Check, Lock } from "lucide-react";
+import { UserAvatar } from "@/components/app/UserAvatar";
+import { Flame, Trophy, Target, BookOpen, Star, Moon, Check, Lock, Pencil } from "lucide-react";
 
 const BADGE_ICONS = {
   first_lesson: Target,
@@ -72,12 +74,30 @@ export default async function ProfilePage() {
     <div className="mx-auto w-full max-w-[1100px] flex flex-col gap-6">
       <div className="rounded-[16px] border-2 border-faded-gray bg-paper-white p-6">
         <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
-          <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-[16px] border-2 border-faded-gray bg-charcoal font-feather text-[28px] font-black leading-none text-paper-white">
-            {(user?.username?.[0] ?? "?").toUpperCase()}
-          </div>
+          <UserAvatar src={user?.avatar} name={user?.name} username={user?.username} boxClass="h-20 w-20 rounded-[16px] text-[28px]" />
           <div className="min-w-0 flex-1 text-center sm:text-left">
             <h1 className="font-codingo-sans text-[24px] font-black leading-[1.1] text-charcoal">{user?.name ?? user?.username}</h1>
             <p className="font-codingo-sans text-[14px] font-medium leading-[1.2] text-pencil-gray">@{user?.username} · {user?.email}</p>
+            {user?.bio ? (
+              <p className="mx-auto mt-1.5 max-w-[480px] font-codingo-sans text-[14px] font-medium leading-[1.4] text-charcoal sm:mx-0">
+                {user.bio}
+              </p>
+            ) : null}
+            <div className="mt-2 flex flex-wrap items-center justify-center gap-2 sm:justify-start">
+              <Link
+                href={`/u/${user?.username}`}
+                className="inline-flex items-center rounded-full border-2 border-faded-gray bg-paper-white px-3 py-1.5 font-codingo-sans text-[12px] font-bold leading-none text-spark-blue transition-colors hover:border-spark-blue"
+              >
+                View public page
+              </Link>
+              <Link
+                href="/app/settings"
+                className="inline-flex items-center gap-1 rounded-full bg-charcoal px-3 py-1.5 font-codingo-sans text-[12px] font-bold leading-none text-paper-white"
+              >
+                <Pencil className="h-3.5 w-3.5" strokeWidth={2.4} aria-hidden="true" />
+                Edit profile
+              </Link>
+            </div>
             <div className="mt-3 flex flex-wrap items-center justify-center gap-2 sm:justify-start">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-[#fff4e6] px-3 py-1.5 font-codingo-sans text-[12px] font-black leading-none text-[#b91c1c]">
                 <Flame className="h-4 w-4" strokeWidth={2.2} aria-hidden="true" />

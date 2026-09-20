@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { API_BASE } from "@/lib/api";
 import { getXpProgress } from "@/lib/level";
 import { SidebarStats } from "@/components/app/UserStats";
+import { UserAvatar } from "@/components/app/UserAvatar";
 
 const NAV = [
   {
@@ -72,7 +73,6 @@ export function Sidebar({ user }) {
     }
   }
 
-  const initials = (user?.username?.[0] ?? user?.name?.[0] ?? "?").toUpperCase();
   const xpInfo = getXpProgress(user?.xp ?? 0);
 
   return (
@@ -116,9 +116,7 @@ export function Sidebar({ user }) {
 
       <div className="border-t-2 border-faded-gray p-4">
         <div className="flex items-center gap-3 rounded-[12px] border-2 border-faded-gray bg-paper-white px-3 py-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-charcoal font-codingo-sans text-[14px] font-bold text-paper-white">
-            {initials}
-          </div>
+          <UserAvatar src={user?.avatar} name={user?.name} username={user?.username} boxClass="h-10 w-10 rounded-[12px] text-[14px]" />
           <div className="min-w-0 flex-1">
             <p className="truncate font-codingo-sans text-[14px] font-bold leading-[1.2] text-charcoal">{user?.username ?? "Learner"}</p>
             <p className="truncate font-codingo-sans text-[13px] font-medium leading-[1.2] text-pencil-gray">{user?.email ?? ""}</p>

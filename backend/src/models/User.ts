@@ -15,6 +15,9 @@ export interface IUser extends Document {
   };
   timezone: string;
   badges: string[];
+  avatarFileId?: string | null; // Appwrite storage file id (server-managed)
+  bio?: string | null; // short public tagline, max 160
+  isPrivate?: boolean; // true hides stats on the public /u/ page
   // Onboarding — added per mandatory flow after signup
   age?: number | null;
   country?: string | null;
@@ -59,6 +62,9 @@ const UserSchema = new Schema<IUser>(
     },
     timezone: { type: String, default: "Asia/Kolkata" },
     badges: { type: [String], default: [] },
+    avatarFileId: { type: String, default: null },
+    bio: { type: String, default: null, trim: true, maxlength: 160 },
+    isPrivate: { type: Boolean, default: false },
     // Onboarding
     age: { type: Number, default: null, min: 13, max: 80 },
     country: { type: String, default: null, trim: true },

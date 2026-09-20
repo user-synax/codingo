@@ -14,4 +14,16 @@ export const env = {
   frontendUrl: process.env.FRONTEND_URL ?? "http://localhost:3000",
   nodeEnv: process.env.NODE_ENV ?? "development",
   isProd: (process.env.NODE_ENV ?? "development") === "production",
+  // Appwrite avatar storage (server-side, API key never leaves the backend).
+  // Optional — avatar upload returns 501 until all four are set.
+  appwriteEndpoint: process.env.APPWRITE_ENDPOINT ?? "",
+  appwriteProjectId: process.env.APPWRITE_PROJECT_ID ?? "",
+  appwriteBucketId: process.env.APPWRITE_BUCKET_ID ?? "",
+  appwriteApiKey: process.env.APPWRITE_API_KEY ?? "",
 } as const;
+
+export const isAppwriteConfigured =
+  Boolean(env.appwriteEndpoint) &&
+  Boolean(env.appwriteProjectId) &&
+  Boolean(env.appwriteBucketId) &&
+  Boolean(env.appwriteApiKey);
