@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=32&duration=3000&pause=1000&color=58CC02&center=true&vCenter=true&width=600&lines=Learn+to+code.+Free.+Fun.+Together.;Bite-sized+lessons.+Real+code.+No+paywalls.;Gamified+learning+for+the+next+generation.;A+free+Duolingo-style+coding+app." alt="Codingo Typing SVG" />
+  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=28&duration=3000&pause=1000&color=58CC02&center=true&vCenter=true&width=600&lines=Learn+to+code.+Free.+Fun.+Together.;Bite-sized+lessons.+Real+code.+No+paywalls.;Gamified+learning+for+the+next+generation.;A+free+Duolingo-style+coding+app." alt="Codingo Typing SVG" />
 </p>
 
 <p align="center">
@@ -200,7 +200,7 @@ Contributions are what make the open source community an amazing place to learn,
 **Ayush** — Built this with ❤️
 
 - 🐙 GitHub: [user-synax](https://github.com/user-synax)
-- 🌐 Portfolio: [codingo.synax.me](https://codingo.synax.me)
+- 🌐 Portfolio: [codingo.synax.me](https://synax.me)
 
 ---
 
