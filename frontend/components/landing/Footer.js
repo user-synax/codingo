@@ -4,6 +4,7 @@
    White + #d7ffb8 text on green fill. */
 
 import Link from "next/link";
+import { Heart } from "lucide-react";
 
 const LINK_COLUMNS = [
   {
@@ -119,9 +120,7 @@ export function Footer() {
             </a>
             <p className="font-codingo-sans text-[13px] leading-[1.23] text-paper-white/60">
               Made with{" "}
-              <span className="text-paper-white" aria-label="love">
-                ♥
-              </span>{" "}
+              <Heart className="inline h-3.5 w-3.5 fill-paper-white text-paper-white" aria-label="love" />{" "}
               by{" "}
               <span className="font-bold text-paper-white">Ayush</span>
             </p>

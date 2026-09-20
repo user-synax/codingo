@@ -18,7 +18,7 @@ function PathIllustration() {
       {/* completed node */}
       <circle cx="240" cy="80" r="32" fill="#58cc02" stroke="#000437" strokeWidth="2" />
       <path d="M228 80l8 8 16-16" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-      <text x="290" y="85" fontFamily="sans-serif" fontSize="14" fontWeight="700" fill="#58cc02">Lesson 1 ✓</text>
+      <text x="290" y="85" fontFamily="sans-serif" fontSize="14" fontWeight="700" fill="#58cc02">Lesson 1 · Done</text>
 
       {/* available node */}
       <circle cx="240" cy="180" r="32" fill="#ffffff" stroke="#1cb0f6" strokeWidth="2" />
@@ -29,7 +29,7 @@ function PathIllustration() {
       <circle cx="240" cy="280" r="32" fill="#f4f4f4" stroke="#afafaf" strokeWidth="2" />
       <rect x="230" y="268" width="20" height="16" rx="3" fill="#afafaf" />
       <circle cx="240" cy="274" r="5" fill="#f4f4f4" />
-      <text x="290" y="285" fontFamily="sans-serif" fontSize="14" fontWeight="700" fill="#afafaf">Lesson 3 🔒</text>
+      <text x="290" y="285" fontFamily="sans-serif" fontSize="14" fontWeight="700" fill="#afafaf">Lesson 3 · Locked</text>
 
       {/* decorative shapes */}
       <circle cx="80" cy="100" r="16" fill="#ff9600" />

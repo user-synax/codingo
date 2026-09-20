@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { API_BASE } from "@/lib/api";
+import { getXpProgress } from "@/lib/level";
+import { SidebarStats } from "@/components/app/UserStats";
 
 const NAV = [
   {
@@ -71,6 +73,7 @@ export function Sidebar({ user }) {
   }
 
   const initials = (user?.username?.[0] ?? user?.name?.[0] ?? "?").toUpperCase();
+  const xpInfo = getXpProgress(user?.xp ?? 0);
 
   return (
     <aside className="fixed inset-y-0 left-0 z-40 hidden w-[280px] flex-col border-r-2 border-faded-gray bg-paper-white md:flex">
@@ -82,6 +85,9 @@ export function Sidebar({ user }) {
           </svg>
         </div>
         <span className="font-feather text-[22px] font-black tracking-[-0.02em] text-eager-green">Codingo</span>
+      </div>
+      <div className="border-b-2 border-faded-gray px-4 py-4">
+        <SidebarStats streakCount={user?.streak?.count ?? 0} xp={user?.xp ?? 0} level={xpInfo.level} xpInfo={xpInfo} />
       </div>
 
       <nav aria-label="App" className="flex-1 overflow-y-auto px-4 py-6">

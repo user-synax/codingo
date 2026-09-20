@@ -183,6 +183,7 @@ Flat colored mascot characters placed in the right half of each section, no cont
 - Don't place CTA buttons on colored backgrounds without testing contrast — green on green or blue on green will disappear.
 - Don't apply the secondary palette (pink, purple, mascot illustration colors) to UI chrome; those colors live only inside character art.
 - Don't stretch the green to small UI text; #58cc02 is for headings, CTA fills, and the footer band, not body or link text.
+- Don't use emoji anywhere in the UI — use lucide-react icons (Flame, Zap, Trophy, Heart, …) for streaks, levels, badges, and decorations.
 
 ## Surfaces
 

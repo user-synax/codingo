@@ -14,7 +14,7 @@ import { useProgressStore } from "@/stores/progressStore";
 import { runCode, compareOutput } from "@/lib/runner";
 import { playCorrect, playWrong, playComplete, isMuted, toggleMuted } from "@/lib/sound";
 import { Confetti } from "@/components/lesson/Confetti";
-import { Volume2, VolumeX } from "lucide-react";
+import { Volume2, VolumeX, Flame } from "lucide-react";
 
 /* Single-screen lesson runner — one exercise at a time, distraction-free.
    Follows design.md (Paper White, 12px radius, 2px borders, 3D buttons) and
@@ -159,21 +159,36 @@ export function LessonRunner({ lesson, exercises }) {
     setChecking(false);
   }
 
+  const [xpResult, setXpResult] = useState(null);
+
   async function handleNext() {
     if (!hasChecked) return;
     if (isLast) {
-      // Finish lesson — save progress
       setSaving(true);
       const allCorrectFirstTry = exercises.every((ex) => firstTryCorrect[ex._id] === true);
+      // Count correct for XP: number of checked true
+      let correctCount = 0;
+      for (const ex of exercises) if (checked[ex._id] === true) correctCount++;
+      // For code types, checked true already means correct, so above covers.
+      // But for code we stored in firstTryCorrect, checked is boolean too, so same.
+      // Ensure at least score-based fallback
+      if (correctCount === 0 && score > 0) correctCount = Math.round((score / 100) * total);
       try {
-        await save({ lessonId: lesson._id, score, completed: true, firstTry: allCorrectFirstTry });
+        const res = await save({
+          lessonId: lesson._id,
+          score,
+          completed: true,
+          firstTry: allCorrectFirstTry,
+          correctCount,
+          total,
+        });
+        setXpResult(res);
         setCelebrate(true);
         setDone(true);
         try {
           playComplete();
         } catch {}
       } catch (e) {
-        // Still show done even if save fails (offline)
         setDone(true);
         try {
           playComplete();
@@ -187,6 +202,10 @@ export function LessonRunner({ lesson, exercises }) {
   }
 
   if (done) {
+    const xp = xpResult?.xpAwarded ?? lesson.xpReward ?? 10;
+    const newBadges = xpResult?.newBadges ?? [];
+    const levelUp = xpResult?.levelUp ?? null;
+    const streak = xpResult?.streak ?? xpResult?.user?.streak ?? null;
     return (
       <div className="relative mx-auto flex w-full max-w-[720px] flex-col items-center gap-6 py-10 text-center">
         <Confetti show={celebrate} />
@@ -199,10 +218,45 @@ export function LessonRunner({ lesson, exercises }) {
         <p className="max-w-[480px] font-codingo-sans text-[15px] font-medium leading-[1.4] text-pencil-gray">
           You scored {score}%. {score >= 80 ? "Great job — keep the streak going!" : "Keep practicing — you can retry."}
         </p>
-        <div className="rounded-[12px] border-2 border-faded-gray bg-paper-white px-6 py-4">
-          <p className="font-codingo-sans text-[13px] font-bold uppercase tracking-[0.053em] text-pencil-gray">XP earned</p>
-          <p className="mt-1 font-codingo-sans text-[28px] font-bold text-charcoal">+{lesson.xpReward ?? 10} XP</p>
+
+        <div className="grid w-full max-w-[480px] grid-cols-3 gap-3">
+          <div className="rounded-[12px] border-2 border-faded-gray bg-paper-white px-4 py-3">
+            <p className="font-codingo-sans text-[11px] font-bold uppercase tracking-[0.04em] text-pencil-gray">XP</p>
+            <p className="mt-1 font-codingo-sans text-[22px] font-black leading-none text-eager-green">+{xp}</p>
+          </div>
+          <div className="rounded-[12px] border-2 border-faded-gray bg-paper-white px-4 py-3">
+            <p className="font-codingo-sans text-[11px] font-bold uppercase tracking-[0.04em] text-pencil-gray">Streak</p>
+            <p className="mt-1 flex items-center justify-center gap-1 font-codingo-sans text-[22px] font-black leading-none text-charcoal">
+              <Flame className="h-5 w-5 text-[#ff9600]" strokeWidth={2.4} aria-hidden="true" />
+              {streak?.count ?? "—"}
+            </p>
+          </div>
+          <div className="rounded-[12px] border-2 border-faded-gray bg-paper-white px-4 py-3">
+            <p className="font-codingo-sans text-[11px] font-bold uppercase tracking-[0.04em] text-pencil-gray">Level</p>
+            <p className="mt-1 font-codingo-sans text-[22px] font-black leading-none text-spark-blue">Lv {xpResult?.user?.level ?? "—"}</p>
+          </div>
         </div>
+
+        {levelUp ? (
+          <div className="w-full max-w-[480px] rounded-[12px] border-2 border-eager-green bg-storybook-green px-4 py-3">
+            <p className="font-codingo-sans text-[14px] font-black text-charcoal">Level up! {levelUp.from} → {levelUp.to}</p>
+            <p className="mt-1 font-codingo-sans text-[13px] font-medium text-charcoal">You’ve reached a new level — keep going!</p>
+          </div>
+        ) : null}
+
+        {newBadges.length ? (
+          <div className="w-full max-w-[480px] rounded-[12px] border-2 border-faded-gray bg-paper-white p-4">
+            <p className="font-codingo-sans text-[12px] font-bold uppercase tracking-[0.04em] text-pencil-gray">Badge unlocked</p>
+            <div className="mt-2 flex flex-wrap justify-center gap-2">
+              {newBadges.map((b) => (
+                <span key={b} className="inline-flex items-center gap-1 rounded-full bg-charcoal px-3 py-1 font-codingo-sans text-[13px] font-bold text-paper-white">
+                  {b}
+                </span>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
         <div className="flex w-full max-w-[480px] flex-col gap-3 sm:flex-row">
           <Button variant="primary" className="flex-1" onClick={() => router.push("/app/learn")}>
             Back to path
