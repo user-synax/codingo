@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { GoogleIcon } from "@/components/auth/GoogleIcon";
+import { registerUser, API_BASE } from "@/lib/api";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -35,6 +37,7 @@ function EyeIcon({ off }) {
 }
 
 export function SignupForm() {
+  const router = useRouter();
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -45,6 +48,8 @@ export function SignupForm() {
   const [touched, setTouched] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+  const [serverError, setServerError] = useState(null);
+  const [googleNote, setGoogleNote] = useState(null);
 
   function validate(next = { username, email, password, confirm }) {
     const e = {};
@@ -64,18 +69,60 @@ export function SignupForm() {
     return e;
   }
 
-  function handleSubmit(ev) {
+  async function handleSubmit(ev) {
     ev.preventDefault();
     const nextErrors = validate();
     setErrors(nextErrors);
     setTouched({ username: true, email: true, password: true, confirm: true });
     if (Object.keys(nextErrors).length) return;
+
     setSubmitting(true);
+    setServerError(null);
     setDone(false);
-    window.setTimeout(() => {
-      setSubmitting(false);
+    setGoogleNote(null);
+
+    try {
+      const { res, data } = await registerUser({
+        username: username.trim(),
+        email: email.trim().toLowerCase(),
+        password,
+      });
+
+      if (!res.ok) {
+        const fieldErrors = data?.errors ?? {};
+        const msg = data?.message ?? "Something went wrong.";
+        if (Object.keys(fieldErrors).length) {
+          setErrors((prev) => ({ ...prev, ...fieldErrors }));
+          setTouched((s) => ({
+            ...s,
+            ...Object.fromEntries(Object.keys(fieldErrors).map((k) => [k, true])),
+          }));
+        }
+        // Show banner if generic or if field errors don't fully explain
+        if (!Object.keys(fieldErrors).length) {
+          setServerError(msg);
+        } else if (msg && msg !== "Validation failed." && !fieldErrors.username && !fieldErrors.email) {
+          setServerError(msg);
+        } else if (fieldErrors.username || fieldErrors.email) {
+          // inline already covers it; also surface generic if 409 message is more helpful?
+          // keep banner hidden to avoid double - field inline is enough
+        } else {
+          setServerError(msg);
+        }
+        return;
+      }
+
       setDone(true);
-    }, 900);
+      window.setTimeout(() => {
+        router.push("/login");
+        router.refresh();
+      }, 800);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Network error. Is the backend running at " + API_BASE + "?";
+      setServerError(msg);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   const err = (k) => (touched[k] ? errors[k] : undefined);
@@ -228,6 +275,12 @@ export function SignupForm() {
         .
       </p>
 
+      {serverError ? (
+        <p role="alert" className="rounded-[12px] border-2 border-destructive/30 bg-destructive/10 px-4 py-3 text-center font-codingo-sans text-[13px] font-medium leading-[1.23] text-destructive">
+          {serverError}
+        </p>
+      ) : null}
+
       <Button type="submit" variant="primary" disabled={submitting} className="w-full">
         {submitting ? (
           <span className="inline-flex items-center gap-2">
@@ -248,7 +301,7 @@ export function SignupForm() {
           aria-live="polite"
           className="rounded-[12px] border-2 border-faded-gray bg-storybook-green px-4 py-3 text-center font-codingo-sans text-[13px] font-medium leading-[1.23] text-charcoal"
         >
-          Mock submit — no API wired yet. Validation passed.
+          Account created — redirecting to log in…
         </p>
       ) : null}
 
@@ -258,10 +311,29 @@ export function SignupForm() {
         <div className="h-px flex-1 bg-faded-gray/60" aria-hidden="true" />
       </div>
 
-      <Button type="button" variant="outline" className="w-full bg-paper-white" onClick={() => setDone(false)}>
+      <Button
+        type="button"
+        variant="outline"
+        className="w-full bg-paper-white"
+        onClick={async () => {
+          setGoogleNote(null);
+          setServerError(null);
+          try {
+            const { data } = await (await import("@/lib/api")).apiFetch("/api/auth/google");
+            setGoogleNote(data?.message ?? "Google OAuth not configured yet.");
+          } catch {
+            setGoogleNote("Google OAuth not configured yet. Use email/password for now.");
+          }
+        }}
+      >
         <GoogleIcon />
         Continue with Google
       </Button>
+      {googleNote ? (
+        <p role="status" className="rounded-[12px] border-2 border-faded-gray bg-paper-white px-4 py-2 text-center font-codingo-sans text-[13px] font-medium leading-[1.23] text-pencil-gray">
+          {googleNote}
+        </p>
+      ) : null}
 
       <p className="text-center font-codingo-sans text-[14px] font-medium leading-[1.4] text-pencil-gray">
         Already have an account?{" "}

@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { GoogleIcon } from "@/components/auth/GoogleIcon";
+import { loginUser, API_BASE } from "@/lib/api";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -37,6 +39,7 @@ function EyeIcon({ off }) {
 }
 
 export function LoginForm() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(false);
@@ -45,6 +48,8 @@ export function LoginForm() {
   const [touched, setTouched] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+  const [serverError, setServerError] = useState(null);
+  const [googleNote, setGoogleNote] = useState(null);
 
   function validate(next = { email, password }) {
     const e = {};
@@ -55,18 +60,66 @@ export function LoginForm() {
     return e;
   }
 
-  function handleSubmit(ev) {
+  async function handleSubmit(ev) {
     ev.preventDefault();
     const nextErrors = validate();
     setErrors(nextErrors);
     setTouched({ email: true, password: true });
     if (Object.keys(nextErrors).length) return;
+
     setSubmitting(true);
+    setServerError(null);
     setDone(false);
-    window.setTimeout(() => {
-      setSubmitting(false);
+    setGoogleNote(null);
+
+    try {
+      const { res, data } = await loginUser({
+        email: email.trim().toLowerCase(),
+        password,
+      });
+
+      if (!res.ok) {
+        const fieldErrors = data?.errors ?? {};
+        const msg = data?.message ?? "Something went wrong.";
+        // Merge field errors into inline errors
+        if (Object.keys(fieldErrors).length) {
+          setErrors((prev) => ({ ...prev, ...fieldErrors }));
+          setTouched((s) => ({
+            ...s,
+            ...Object.fromEntries(Object.keys(fieldErrors).map((k) => [k, true])),
+          }));
+        }
+        // If no field errors, show banner. If both, show banner too.
+        if (!Object.keys(fieldErrors).length || msg !== "Validation failed.") {
+          // Avoid duplicate banner when field error already explains it and msg is generic
+          const hasFieldMsg = fieldErrors.email || fieldErrors.password;
+          if (!hasFieldMsg || msg !== "Invalid email or password.") {
+            setServerError(msg);
+          } else if (fieldErrors.password && msg === "Invalid email or password.") {
+            // backend sends same msg for both fields; surface it once inline via password field
+            // keep serverError null to avoid double
+          } else {
+            setServerError(msg);
+          }
+        } else {
+          // Validation failed with field errors — no banner needed unless generic
+          if (msg && msg !== "Validation failed.") setServerError(msg);
+        }
+        return;
+      }
+
       setDone(true);
-    }, 900);
+      // Small success feedback then redirect to home (auth is httpOnly cookie, no token in JS)
+      window.setTimeout(() => {
+        router.push("/");
+        router.refresh();
+      }, 700);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Network error. Is the backend running at " + API_BASE + "?";
+      setServerError(msg);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   const emailErr = touched.email ? errors.email : undefined;
@@ -159,16 +212,18 @@ export function LoginForm() {
         Remember me
       </label>
 
+      {/* Server error banner */}
+      {serverError ? (
+        <p role="alert" className="rounded-[12px] border-2 border-destructive/30 bg-destructive/10 px-4 py-3 text-center font-codingo-sans text-[13px] font-medium leading-[1.23] text-destructive">
+          {serverError}
+        </p>
+      ) : null}
+
       {/* Submit — primary green with 4px Deep Leaf edge */}
       <Button type="submit" variant="primary" disabled={submitting} className="w-full">
         {submitting ? (
           <span className="inline-flex items-center gap-2">
-            <svg
-              className="h-4 w-4 animate-spin"
-              viewBox="0 0 24 24"
-              fill="none"
-              aria-hidden="true"
-            >
+            <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity="0.25" strokeWidth="4" />
               <path d="M22 12a10 10 0 0 0-10-10" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
             </svg>
@@ -185,7 +240,7 @@ export function LoginForm() {
           aria-live="polite"
           className="rounded-[12px] border-2 border-faded-gray bg-storybook-green px-4 py-3 text-center font-codingo-sans text-[13px] font-medium leading-[1.23] text-charcoal"
         >
-          Mock submit — no API wired yet. Validation passed.
+          Logged in — redirecting…
         </p>
       ) : null}
 
@@ -201,14 +256,25 @@ export function LoginForm() {
         type="button"
         variant="outline"
         className="w-full bg-paper-white"
-        onClick={() => {
-          // UI-only preview hook
-          setDone(false);
+        onClick={async () => {
+          setGoogleNote(null);
+          setServerError(null);
+          try {
+            const { data } = await (await import("@/lib/api")).apiFetch("/api/auth/google");
+            setGoogleNote(data?.message ?? "Google OAuth not configured yet.");
+          } catch {
+            setGoogleNote("Google OAuth not configured yet. Use email/password for now.");
+          }
         }}
       >
         <GoogleIcon />
         Continue with Google
       </Button>
+      {googleNote ? (
+        <p role="status" className="rounded-[12px] border-2 border-faded-gray bg-paper-white px-4 py-2 text-center font-codingo-sans text-[13px] font-medium leading-[1.23] text-pencil-gray">
+          {googleNote}
+        </p>
+      ) : null}
 
       <p className="text-center font-codingo-sans text-[14px] font-medium leading-[1.4] text-pencil-gray">
         Don&apos;t have an account?{" "}
