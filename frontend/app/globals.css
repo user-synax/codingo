@@ -1,26 +1,361 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@custom-variant dark (&:is(.dark *));
+
+/* ================================================================
+   Codingo design foundation — design.md is the single source of
+   truth for all visual decisions below. Theme: LIGHT by default.
+   `.dark` keeps the same variable structure (placeholder values)
+   so a dark theme can be added later without refactoring.
+   Motion tokens/patterns: transitions-dev skill
+   (`.agents/skills/transitions-dev`).
+   Do's and Don'ts enforced: 12px radius, 2px borders, flat
+   fills, no gradients or drop shadows — except the 4px button
+   bottom press-edge. Green #58cc02 only for CTA fills + display
+   headings. Blue #1cb0f6 for links + the outlined secondary CTA.
+   ================================================================ */
+
+@theme {
+  /* ---- Colors (design.md Tokens — Colors) ---- */
+  --color-eager-green: #58cc02;
+  --color-storybook-green: #d7ffb8;
+  --color-spark-blue: #1cb0f6;
+  --color-fresh-leaf: #a5ed6e;
+  --color-night-ink: #000437;
+  --color-paper-white: #ffffff;
+  --color-charcoal: #4b4b4b;
+  --color-pencil-gray: #777777;
+  --color-faded-gray: #afafaf;
+  --color-deep-leaf: #58a700;
+  --color-pale-sky: #bbe7fc;
+
+  /* ---- Type scale (design.md Type Scale) ---- */
+  --text-caption: 13px;
+  --text-nav-label: 15px;
+  --text-body: 17px;
+  --text-subheading: 19px;
+  --text-heading-sm: 32px;
+  --text-heading: 48px;
+  --text-display: 64px;
+
+  --leading-caption: 1.23;
+  --leading-nav-label: 1.33;
+  --leading-body: 1.18;
+  --leading-subheading: 1.4;
+  --leading-heading-sm: 1.2;
+  --leading-heading: 1.2;
+  --leading-display: 1.2;
+
+  --tracking-nav-label: 0.795px;
+  --tracking-heading: -0.96px;
+  --tracking-display: -1.28px;
+
+  /* ---- Spacing scale (base 4px, comfortable density) ----
+     NOTE: these keys override Tailwind's dynamic spacing for the
+     same numbers (e.g. `p-8` = 8px here, NOT 32px). In components,
+     prefer small utilities (1-7) or arbitrary values such as
+     `h-[64px]` for layout outside this scale. */
+  --spacing-8: 8px;
+  --spacing-12: 12px;
+  --spacing-16: 16px;
+  --spacing-24: 24px;
+  --spacing-32: 32px;
+  --spacing-40: 40px;
+  --spacing-48: 48px;
+  --spacing-64: 64px;
+  --spacing-80: 80px;
+  --spacing-96: 96px;
+
+  /* ---- Radius: every button/pill/nav-item is 12px ---- */
+  --radius-xl: 12px;
+  --radius-links: 12px;
+  --radius-buttons: 12px;
+  --radius-nav-items: 12px;
 }
 
+/* Display/body fonts are injected by next/font in app/layout.js
+   (Nunito 800/900 -> --font-feather, Nunito Sans 500/700 ->
+   --font-codingo-sans, the design.md substitutes). `inline`
+   exposes them as `font-feather` / `font-codingo-sans` utilities
+   without emitting duplicate :root values. */
 @theme inline {
+  --font-feather: var(--font-feather);
+  --font-codingo-sans: var(--font-codingo-sans);
+
+  /* shadcn/ui color bindings */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+:root {
+  /* ---- shadcn/ui variables, LIGHT default per design.md ---- */
+  --background: #ffffff; /* Paper White page canvas */
+  --foreground: #4b4b4b; /* Charcoal workhorse text */
+  --card: #ffffff;
+  --card-foreground: #4b4b4b;
+  --popover: #ffffff;
+  --popover-foreground: #4b4b4b;
+  --primary: #58cc02; /* Eager Green CTA fill */
+  --primary-foreground: #ffffff;
+  --secondary: #d7ffb8; /* Storybook Green tint */
+  --secondary-foreground: #4b4b4b;
+  --muted: #f4f4f4; /* neutral surface for overlays/skeletons */
+  --muted-foreground: #777777; /* Pencil Gray */
+  --accent: #d7ffb8;
+  --accent-foreground: #4b4b4b;
+  --destructive: #e5484d;
+  --border: #afafaf; /* Faded Gray */
+  --input: #afafaf;
+  --ring: #1cb0f6; /* Spark Blue focus ring */
+  --radius: 0.75rem; /* 12px */
+
+  /* ---- Layout (design.md Layout) ---- */
+  --page-max-width: 1200px;
+
+  /* ---- Motion tokens (transitions-dev `_root.css` subset) ---- */
+  --duration-stagger: 40ms; /* per-item stagger offset */
+  --duration-micro: 80ms;
+  --duration-quick: 150ms; /* button press, tooltip appear */
+  --duration-fast: 250ms; /* button hover, dropdown/modal open */
+  --duration-medium: 350ms; /* panel close, toast close */
+  --duration-slow: 400ms; /* panel open */
+  --duration-very-slow: 500ms; /* text reveal, emphasis moments */
+  --ease-smooth-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: ease-in-out;
+  --ease-out: ease-out;
+  --ease-linear: linear;
+  --distance-medium: 12px; /* text reveal travel */
+  --blur-medium: 3px; /* text reveal blur */
+  /* 18-texts-reveal (staggered hero entrance) */
+  --stagger-dur: 500ms;
+  --stagger-distance: 12px;
+  --stagger-stagger: 40ms;
+  --stagger-blur: 3px;
+  --stagger-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  /* 07-panel-reveal (mobile Sheet; adapted to the X axis) */
+  --panel-open-dur: 400ms;
+  --panel-close-dur: 350ms;
+  --panel-blur: 2px;
+  --panel-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Dark theme: same structure, values TBD (design.md is light-only
+   for now). Keeping the block means no refactor when dark ships. */
+.dark {
+  --background: #ffffff;
+  --foreground: #4b4b4b;
+  --card: #ffffff;
+  --card-foreground: #4b4b4b;
+  --popover: #ffffff;
+  --popover-foreground: #4b4b4b;
+  --primary: #58cc02;
+  --primary-foreground: #ffffff;
+  --secondary: #d7ffb8;
+  --secondary-foreground: #4b4b4b;
+  --muted: #f4f4f4;
+  --muted-foreground: #777777;
+  --accent: #d7ffb8;
+  --accent-foreground: #4b4b4b;
+  --destructive: #e5484d;
+  --border: #afafaf;
+  --input: #afafaf;
+  --ring: #1cb0f6;
+  --radius: 0.75rem;
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family:
+      var(--font-codingo-sans), ui-sans-serif, system-ui, sans-serif;
+  }
+
+  ::selection {
+    background: var(--color-storybook-green);
+    color: var(--color-charcoal);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* ---- Nav links: nav-label style (15px/700 uppercase 0.0530em).
+   Pencil Gray resting, Spark Blue on hover (blue is reserved for
+   interactive elements). 250ms smooth-out per motion tokens. ---- */
+.nav-link {
+  transition: color var(--duration-fast) var(--ease-smooth-out);
+}
+.nav-link:hover {
+  color: var(--color-spark-blue);
+}
+
+/* ---- Buttons: Duolingo-style 3D press edge.
+   Resting: 4px bottom edge as box-shadow, so the button's box size
+   never changes and pressing shifts no layout. Press:
+   translateY(2px) with the edge compressing to 2px over
+   --duration-quick. Hover only shifts color/brightness over
+   --duration-fast — no lift, so the button stays grounded on its
+   edge. This bottom edge is the single allowed shadow in the
+   system (design.md). ---- */
+.codingo-btn {
+  transition:
+    background-color var(--duration-fast) var(--ease-smooth-out),
+    border-color var(--duration-fast) var(--ease-smooth-out),
+    color var(--duration-fast) var(--ease-smooth-out),
+    filter var(--duration-fast) var(--ease-smooth-out),
+    box-shadow var(--duration-quick) var(--ease-smooth-out),
+    transform var(--duration-quick) var(--ease-smooth-out);
+  will-change: transform;
+}
+.codingo-btn-primary {
+  box-shadow: 0 4px 0 var(--color-deep-leaf);
+}
+.codingo-btn-primary:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 var(--color-deep-leaf);
+}
+.codingo-btn-outline {
+  box-shadow: 0 4px 0 var(--color-pale-sky);
+}
+.codingo-btn-outline:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 var(--color-pale-sky);
+}
+
+/* ---- Hero entrance: staggered blurred rise.
+   Adapted from transitions-dev 18-texts-reveal for a
+   server-rendered hero: the same tokens (500ms / 12px / 40ms
+   stagger / 3px blur / smooth-out) play as mount keyframes so no
+   client JS toggle is needed. ---- */
+@keyframes hero-rise {
+  from {
+    opacity: 0;
+    transform: translateY(var(--stagger-distance));
+    filter: blur(var(--stagger-blur));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+.hero-reveal {
+  opacity: 0;
+  animation: hero-rise var(--stagger-dur) var(--stagger-ease) forwards;
+  will-change: transform, opacity, filter;
+}
+.hero-reveal--1 {
+  animation-delay: 0ms;
+}
+.hero-reveal--2 {
+  animation-delay: var(--stagger-stagger);
+}
+.hero-reveal--3 {
+  animation-delay: calc(var(--stagger-stagger) * 2);
+}
+.hero-reveal--4 {
+  animation-delay: calc(var(--stagger-stagger) * 3);
+}
+.hero-reveal--5 {
+  animation-delay: calc(var(--stagger-stagger) * 4);
+}
+
+/* ---- Mobile Sheet: slide + fade + cross-blur.
+   Panel-reveal tokens (07): 400ms open / 350ms close /
+   smooth-out. Overlay fades faster (250ms in / 150ms out). ---- */
+@keyframes sheet-in-right {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+    filter: blur(var(--panel-blur));
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+@keyframes sheet-out-right {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+    filter: blur(0);
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+    filter: blur(var(--panel-blur));
+  }
+}
+@keyframes overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes overlay-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+.sheet-overlay[data-state="open"] {
+  animation: overlay-in var(--duration-fast) var(--ease-smooth-out);
+}
+.sheet-overlay[data-state="closed"] {
+  animation: overlay-out var(--duration-quick) var(--ease-smooth-out);
+}
+.sheet-content-right[data-state="open"] {
+  animation: sheet-in-right var(--panel-open-dur) var(--panel-ease);
+}
+.sheet-content-right[data-state="closed"] {
+  animation: sheet-out-right var(--panel-close-dur) var(--panel-ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .codingo-btn,
+  .nav-link,
+  .sheet-overlay,
+  .sheet-content-right {
+    transition: none !important;
+  }
+  .codingo-btn:hover,
+  .codingo-btn:active {
+    transform: none !important;
+  }
+  .hero-reveal,
+  .sheet-overlay[data-state="open"],
+  .sheet-overlay[data-state="closed"],
+  .sheet-content-right[data-state="open"],
+  .sheet-content-right[data-state="closed"] {
+    animation: none !important;
+  }
+  .hero-reveal {
+    opacity: 1 !important;
+  }
 }

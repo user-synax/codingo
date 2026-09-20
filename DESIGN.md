@@ -5,7 +5,7 @@
 
 Source measurements are normalized; roles and recommendations are interpreted. Font summary lists are independent, not paired by position. HTML examples are reconstructions, not source components.
 
-Codingo's interface treats the page like a children's storybook: white paper canvas, chubby rounded display type, and a single saturated green that reads as 'correct answer' the moment it appears. Body copy stays calm in mid-gray so the green and its accent blue can do all the emotional work — green for progress and headings, blue for interactive links and secondary actions. Components are pill-shaped or chunky-rounded with thick 2px borders in black or color, giving every button the feel of a sticker pressed onto the page rather than a flat UI control.
+Codingo's interface treats the page like a children's storybook: white paper canvas, chubby rounded display type, and a single saturated green that reads as 'correct answer' the moment it appears. Body copy stays calm in mid-gray so the green and its accent blue can do all the emotional work — green for progress and headings, blue for interactive links and secondary actions. Components are pill-shaped or chunky-rounded with thick 2px borders in black or color, giving every button the feel of a sticker pressed onto the page rather than a flat UI control. Buttons add a chunky 4px bottom edge in a darker shade of their fill that compresses when pressed, like a toy key clicking down.
 
 ## Tokens — Colors
 
@@ -20,6 +20,8 @@ Codingo's interface treats the page like a children's storybook: white paper can
 | Charcoal | `#4b4b4b` | `--color-charcoal` | Hero headings and primary body copy — the workhorse dark text that lets colored headings stand out |
 | Pencil Gray | `#777777` | `--color-pencil-gray` | Muted body paragraphs, secondary descriptive text — recedes so colored elements lead |
 | Faded Gray | `#afafaf` | `--color-faded-gray` | Disabled or low-emphasis nav labels and button borders |
+| Deep Leaf | `#58a700` | `--color-deep-leaf` | Darker shade of Eager Green, used ONLY as the 4px bottom press-edge under the green primary button |
+| Pale Sky | `#bbe7fc` | `--color-pale-sky` | Soft light blue, used ONLY as the 4px bottom press-edge under the white outlined button |
 
 ## Tokens — Typography
 
@@ -85,6 +87,18 @@ Codingo's interface treats the page like a children's storybook: white paper can
 | buttons | 12px |
 | nav-items | 12px |
 
+### 3D Bottom Edge (buttons only)
+
+| State | Value | Token |
+|-------|-------|-------|
+| resting edge | 4px solid, darker shade of fill | `--btn-edge-resting: 4px` |
+| pressed edge | 2px solid, same color | `--btn-edge-pressed: 2px` |
+| press travel | translateY(2px) | — |
+
+- Primary: 4px #58a700 (Deep Leaf) under #58cc02 fill.
+- Outlined: 4px #bbe7fc (Pale Sky) under white fill.
+- The edge is the ONLY shadow allowed in the system (see Don'ts). Render it as `box-shadow: 0 4px 0 <color>` — never `border-bottom` — so the press animation never changes the button's box size or shifts surrounding layout.
+
 ### Layout
 
 - **Page max-width:** 1200px
@@ -97,12 +111,12 @@ Codingo's interface treats the page like a children's storybook: white paper can
 ### Primary CTA Button
 **Role:** Filled green button for 'Get started' and top-of-page conversion
 
-Fill #58cc02, white text, codingo-sans 700 at 15px uppercase with 0.0530em tracking, 12px border-radius, 16px horizontal padding. No border — color alone carries the button. Sits directly on white canvas.
+Fill #58cc02, white text, codingo-sans 700 at 15px uppercase with 0.0530em tracking, 12px border-radius, 16px horizontal padding. No side border — color alone carries the button. Duolingo-style 3D press edge: a 4px bottom edge in #58a700 (Deep Leaf) rendered as `box-shadow: 0 4px 0` so pressing never shifts layout. On press (`:active`): `translateY(2px)` and the edge compresses to 2px. Hover only darkens slightly (`brightness(0.95)`), no lift. Sits directly on white canvas.
 
 ### Outlined Account Button
 **Role:** Secondary CTA below primary on hero
 
-Transparent fill, text in #1cb0f6, codingo-sans 700 at 14px, 12px border-radius, 16px horizontal padding, 2px solid border in #afafaf. Pairs with the green CTA as a calm ghost alternative.
+White fill, text in #1cb0f6, codingo-sans 700 at 14px, 12px border-radius, 16px horizontal padding, 2px solid border in #afafaf on top/sides. Duolingo-style 3D press edge: a 4px bottom edge in #bbe7fc (Pale Sky) rendered as `box-shadow: 0 4px 0` so pressing never shifts layout. On press (`:active`): `translateY(2px)` and the edge compresses to 2px. Pairs with the green CTA as a tactile ghost alternative.
 
 ### Nav Language Pill
 **Role:** Language selector in top header
@@ -155,6 +169,7 @@ Flat colored mascot characters placed in the right half of each section, no cont
 - Use #58cc02 for any heading or CTA that needs to read as 'progress' or 'go' — it is the only saturated color allowed on large display text.
 - Set display headlines at 48-64px in feather 700 with -0.0200em letter-spacing; this rounded weight is the brand voice.
 - Give every button and pill a 12px border-radius and pair it with a 2px solid border in #afafaf or color — outlined buttons are first-class citizens, not a fallback.
+- Give every button a chunky 4px bottom press-edge in a darker shade of its fill (#58a700 under green, #bbe7fc under white) that compresses to 2px with a 2px downward travel on press. This bottom edge is the single allowed exception to the no-shadows rule.
 - Reserve uppercase at 15px with 0.0530em tracking for nav labels and language pills; never apply it to body copy.
 - Keep body text in #777777 at 17px/500 — mid-gray is the default so colored elements can lead.
 - Use #1cb0f6 (Spark Blue) exclusively for interactive links and outlined secondary CTAs; it is the 'curious' companion to the green.
@@ -163,7 +178,7 @@ Flat colored mascot characters placed in the right half of each section, no cont
 ### Don't
 - Don't put colored text in body paragraphs — body stays in #777777 or #4b4b4b so the green headlines own the page.
 - Don't use sharp corners; even small tags and pills use 12px radius.
-- Don't introduce gradients, shadows, or glass effects — Codingo's surfaces are flat sticker-like fills with thick borders.
+- Don't introduce gradients, glass effects, or drop shadows — Codingo's surfaces are flat sticker-like fills with thick borders. The ONLY shadow allowed anywhere is the 4px button bottom press-edge defined above.
 - Don't use feather at sizes below 48px; it is a display face only. Subheadings 19-32px use codingo-sans 700.
 - Don't place CTA buttons on colored backgrounds without testing contrast — green on green or blue on green will disappear.
 - Don't apply the secondary palette (pink, purple, mascot illustration colors) to UI chrome; those colors live only inside character art.
@@ -195,6 +210,8 @@ Quick Color Reference:
 - background (page): #ffffff
 - background (footer band): #58cc02
 - border (outlined button): #afafaf
+- button edge (primary press-edge): #58a700
+- button edge (outlined press-edge): #bbe7fc
 - accent (interactive link): #1cb0f6
 - primary action: no distinct CTA color
 
@@ -227,6 +244,8 @@ No distinct primary action color was observed; use the extracted neutral button 
   --color-charcoal: #4b4b4b;
   --color-pencil-gray: #777777;
   --color-faded-gray: #afafaf;
+  --color-deep-leaf: #58a700;
+  --color-pale-sky: #bbe7fc;
 
   /* Typography — Font Families */
   --font-feather: 'feather', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -304,6 +323,8 @@ No distinct primary action color was observed; use the extracted neutral button 
   --color-charcoal: #4b4b4b;
   --color-pencil-gray: #777777;
   --color-faded-gray: #afafaf;
+  --color-deep-leaf: #58a700;
+  --color-pale-sky: #bbe7fc;
 
   /* Typography */
   --font-feather: 'feather', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
