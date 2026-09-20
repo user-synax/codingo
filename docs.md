@@ -93,8 +93,8 @@ The monorepo is organized as two separate folders under one repository: `fronten
 │   │   ├── index.ts       # Entry point — connects DB, starts server
 │   │   ├── app.ts         # Express app factory (middleware, routes, error handler)
 │   │   ├── config/        # env.ts, db.ts
-│   │   ├── routes/        # auth.ts, courses.ts, lessons.ts, progress.ts
-│   │   ├── models/        # User, Course, Unit, Lesson, Exercise, Progress, XPEvent
+│   │   ├── routes/        # auth.ts, courses.ts, lessons.ts, progress.ts, community.ts
+│   │   ├── models/        # User, Course, Unit, Lesson, Exercise, Progress, XPEvent, Thread, Reply, Report
 │   │   ├── middleware/    # auth.ts (requireAuth, optionalAuth)
 │   │   ├── validators/    # auth.ts (Zod schemas)
 │   │   ├── utils/         # jwt.ts, streak.ts
@@ -132,7 +132,8 @@ The monorepo is organized as two separate folders under one repository: `fronten
 | `/app` | Server | `app/app/page.js` | Dashboard — XP, streak, level stats + path preview |
 | `/app/learn` | Server | `app/app/learn/page.js` | Vertical skill path with lesson nodes |
 | `/app/learn/[lessonId]` | Server | `app/app/learn/[lessonId]/page.js` | Lesson runner or view-only completed lesson |
-| `/app/community` | Server | `app/app/community/page.js` | Community threads placeholder |
+| `/app/community` | Server | `app/app/community/page.js` | Live question feed — filter by lesson, sort, ask, upvote |
+| `/app/community/[threadId]` | Server | `app/app/community/[threadId]/page.js` | Thread detail — live replies, accept answer, report |
 | `/app/profile` | Server | `app/app/profile/page.js` | User profile page |
 
 ### 5.3 Key Components
@@ -295,6 +296,15 @@ Design rules:
 | `POST` | `/api/progress` | Yes | Save exercise/lesson progress, award XP + streak |
 | `GET` | `/api/progress/me` | Yes | Get all progress for current user |
 | `GET` | `/api/progress/:lessonId` | Yes | Get progress for a single lesson |
+| `GET` | `/api/threads` | Yes | Cursor feed (`lessonId`, `sort=new\|top`, `limit`, `before`) |
+| `POST` | `/api/threads` | Yes | Ask a question (rate-limited) |
+| `GET` | `/api/threads/stream` | Yes | SSE live feed (`lessonId` filter, heartbeat) |
+| `GET` | `/api/threads/:id` | Yes | Thread + replies (accepted first) |
+| `POST` | `/api/threads/:id/replies` | Yes | Reply to a thread (rate-limited) |
+| `POST` | `/api/threads/:id/upvote` | Yes | Toggle thread upvote |
+| `POST` | `/api/threads/:id/accept` | Yes | Asker accepts an answer |
+| `POST` | `/api/threads/replies/:replyId/upvote` | Yes | Toggle reply upvote |
+| `POST` | `/api/threads/reports` | Yes | Report a thread/reply |
 
 ### 6.3 Middleware
 

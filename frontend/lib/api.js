@@ -77,3 +77,61 @@ export async function saveProgress({ lessonId, score, completed, firstTry }) {
     body: { lessonId, score, completed, firstTry },
   });
 }
+
+/* Community — doubt threads per lesson (PRD 5.5) */
+
+export async function fetchThreads({ lessonId, sort = "new", limit = 20, before } = {}) {
+  const q = new URLSearchParams();
+  if (lessonId) q.set("lessonId", lessonId);
+  if (sort) q.set("sort", sort);
+  if (limit) q.set("limit", String(limit));
+  if (before) q.set("before", before);
+  const qs = q.toString();
+  return apiFetch(`/api/threads${qs ? `?${qs}` : ""}`, { method: "GET" });
+}
+
+export async function createThread({ title, body, lessonId }) {
+  return apiFetch("/api/threads", {
+    method: "POST",
+    body: { title, body, lessonId: lessonId || null },
+  });
+}
+
+export async function fetchThread(threadId) {
+  return apiFetch(`/api/threads/${threadId}`, { method: "GET" });
+}
+
+export async function createReply(threadId, body) {
+  return apiFetch(`/api/threads/${threadId}/replies`, {
+    method: "POST",
+    body: { body },
+  });
+}
+
+export async function upvoteThread(threadId) {
+  return apiFetch(`/api/threads/${threadId}/upvote`, { method: "POST" });
+}
+
+export async function upvoteReply(replyId) {
+  return apiFetch(`/api/threads/replies/${replyId}/upvote`, { method: "POST" });
+}
+
+export async function acceptReply(threadId, replyId) {
+  return apiFetch(`/api/threads/${threadId}/accept`, {
+    method: "POST",
+    body: { replyId },
+  });
+}
+
+export async function reportContent({ targetType, targetId, reason }) {
+  return apiFetch("/api/threads/reports", {
+    method: "POST",
+    body: { targetType, targetId, reason },
+  });
+}
+
+/* SSE live-feed URL — EventSource can't set headers, but the httpOnly
+   cookie is sent with `withCredentials: true` (backend allows credentials). */
+export function threadsStreamUrl(lessonId) {
+  return `${API_BASE}/api/threads/stream${lessonId ? `?lessonId=${lessonId}` : ""}`;
+}

@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { API_BASE } from "@/lib/api";
 import { LessonRunner } from "@/components/lesson/LessonRunner";
-import { Check, Eye, Lock } from "lucide-react";
+import { Check, Eye, Lock, MessageCircle } from "lucide-react";
 
 async function getLesson(lessonId) {
   const cookieStore = await cookies();
@@ -146,6 +146,13 @@ export default async function LessonPage({ params }) {
         <span className="font-codingo-sans text-[13px] font-bold uppercase tracking-[0.04em] text-pencil-gray">
           {lesson.title} · {exercises.length} exercises
         </span>
+        <Link
+          href={`/app/community?lessonId=${String(lesson._id)}`}
+          className="inline-flex items-center gap-1.5 rounded-[12px] border-2 border-faded-gray bg-paper-white px-3 py-1.5 font-codingo-sans text-[13px] font-bold text-spark-blue transition-colors hover:border-spark-blue"
+        >
+          <MessageCircle className="h-4 w-4" strokeWidth={2.2} aria-hidden="true" />
+          Discuss
+        </Link>
         {isCompleted ? (
           <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-storybook-green px-3 py-1 font-codingo-sans text-[11px] font-bold uppercase tracking-[0.04em] text-charcoal">
             <Eye className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
