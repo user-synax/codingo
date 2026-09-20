@@ -188,6 +188,16 @@
     border-color: var(--border);
   }
 
+  html {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  html::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+
   body {
     background: var(--background);
     color: var(--foreground);
@@ -199,6 +209,24 @@
     background: var(--color-storybook-green);
     color: var(--color-charcoal);
   }
+}
+
+/* Custom thin scrollbar for inner scroll areas only — not the page */
+.scroll-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-faded-gray) transparent;
+}
+.scroll-thin::-webkit-scrollbar {
+  display: block;
+  width: 6px;
+  height: 6px;
+}
+.scroll-thin::-webkit-scrollbar-thumb {
+  background: var(--color-faded-gray);
+  border-radius: 999px;
+}
+.scroll-thin::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 /* ---- Nav links: nav-label style (15px/700 uppercase 0.0530em).
