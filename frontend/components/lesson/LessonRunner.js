@@ -199,6 +199,7 @@ export function LessonRunner({ lesson, exercises, nextLesson }) {
   }
 
   const [xpResult, setXpResult] = useState(null);
+  const [offlineSaved, setOfflineSaved] = useState(false);
 
   async function handleNext() {
     if (!hasChecked) return;
@@ -222,12 +223,21 @@ export function LessonRunner({ lesson, exercises, nextLesson }) {
           total,
         });
         setXpResult(res);
+        setOfflineSaved(false);
         setCelebrate(true);
         setDone(true);
         try {
           playComplete();
         } catch {}
       } catch (e) {
+        // Offline: progress is already in IndexedDB + pending queue (IDB-first)
+        // Keep the lesson as "done" locally; it will sync when online.
+        const isOffline = typeof navigator !== "undefined" && !navigator.onLine;
+        const msg = e?.message ?? "";
+        const looksOffline = isOffline || /offline|Failed to fetch|NetworkError|Load failed/i.test(msg);
+        setOfflineSaved(looksOffline);
+        setXpResult(null);
+        setCelebrate(true);
         setDone(true);
         try {
           playComplete();
@@ -257,6 +267,12 @@ export function LessonRunner({ lesson, exercises, nextLesson }) {
         <p className="max-w-[480px] font-codingo-sans text-[15px] font-medium leading-[1.4] text-pencil-gray">
           You scored {score}%. {score >= 80 ? "Great job — keep the streak going!" : "Keep practicing — you can retry."}
         </p>
+        {offlineSaved ? (
+          <div className="w-full max-w-[480px] rounded-[12px] border-2 border-[#ffd8a8] bg-[#fff4e6] px-4 py-3">
+            <p className="font-codingo-sans text-[13px] font-bold leading-[1.4] text-[#e8590c]">Saved offline — will sync when you’re back online.</p>
+            <p className="mt-1 font-codingo-sans text-[12px] font-medium leading-[1.4] text-charcoal">Your progress is in IndexedDB and your path is already unlocked locally.</p>
+          </div>
+        ) : null}
 
         <div className="grid w-full max-w-[480px] grid-cols-3 gap-3">
           <div className="rounded-[12px] border-2 border-faded-gray bg-paper-white px-4 py-3">

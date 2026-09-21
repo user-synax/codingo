@@ -4,6 +4,7 @@ import { Sidebar } from "@/components/app/Sidebar";
 import { BottomNav } from "@/components/app/BottomNav";
 import { TopbarStats } from "@/components/app/UserStats";
 import { BrandLogo } from "@/components/BrandLogo";
+import { ProgressHydrator } from "@/components/progress/ProgressHydrator";
 
 export const metadata = {
   title: { absolute: "App — Codingo" },
@@ -17,6 +18,7 @@ export default async function AppLayout({ children }) {
 
   return (
     <div className="min-h-screen bg-paper-white font-codingo-sans text-charcoal">
+      <ProgressHydrator user={user} userId={user?._id ?? user?.id} />
       <Sidebar user={user} />
       {/* Desktop offset for fixed sidebar */}
       <div className="flex min-h-screen flex-col md:pl-[280px]">

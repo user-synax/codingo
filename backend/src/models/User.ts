@@ -56,7 +56,7 @@ const UserSchema = new Schema<IUser>(
       select: false, // never return by default
     },
     // Google account id — unique when present, absent for email/password users
-    googleId: { type: String, default: null, index: true },
+    googleId: { type: String, default: null },
     name: { type: String, required: true, trim: true },
     avatar: { type: String, default: undefined },
     xp: { type: Number, default: 0 },
@@ -94,6 +94,11 @@ UserSchema.index(
   { email: 1 },
   { unique: true, collation: { locale: "en", strength: 2 } },
 );
+
+// Leaderboard — global XP ranking (all-time, onboardingCompleted + public only).
+// Supports sort { xp: -1, createdAt: 1 } and filter { onboardingCompleted, isPrivate, xp }.
+UserSchema.index({ xp: -1, createdAt: 1 });
+UserSchema.index({ onboardingCompleted: 1, isPrivate: 1, xp: -1, createdAt: 1 });
 
 // Normalize before save
 UserSchema.pre("save", function (next) {

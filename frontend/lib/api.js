@@ -196,3 +196,13 @@ export async function uploadAvatarFile(file) {
 export async function fetchPublicProfile(username) {
   return apiFetch(`/api/users/u/${encodeURIComponent(username)}`, { method: "GET" });
 }
+
+/* Leaderboard — global XP ranking (all-time) */
+export async function fetchLeaderboard({ limit = 25, offset = 0, page } = {}) {
+  const q = new URLSearchParams();
+  if (limit) q.set("limit", String(limit));
+  if (typeof page === "number" && page > 0) q.set("page", String(page));
+  else if (offset) q.set("offset", String(offset));
+  const qs = q.toString();
+  return apiFetch(`/api/leaderboard${qs ? `?${qs}` : ""}`, { method: "GET" });
+}

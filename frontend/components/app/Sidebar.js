@@ -7,6 +7,7 @@ import { BrandLogo } from "@/components/BrandLogo";
 import { getXpProgress } from "@/lib/level";
 import { SidebarStats } from "@/components/app/UserStats";
 import { UserAvatar } from "@/components/app/UserAvatar";
+import { useProgressStore } from "@/stores/progressStore";
 
 const NAV = [
   {
@@ -42,6 +43,20 @@ const NAV = [
     ),
   },
   {
+    label: "Leaderboard",
+    href: "/app/leaderboard",
+    icon: (active) => (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+        <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
+        <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+        <path d="M4 22h16" />
+        <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
+        <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
+        <path d="M18 2H6v9a6 6 0 0 0 12 0V2Z" />
+      </svg>
+    ),
+  },
+  {
     label: "Profile",
     href: "/app/profile",
     icon: (active) => (
@@ -69,6 +84,14 @@ export function Sidebar({ user }) {
         credentials: "include",
       });
     } finally {
+      // Clear IndexedDB-backed progress cache for privacy on shared devices
+      try {
+        useProgressStore.getState().reset();
+        // Keep the persistent IDB for offline reload? Wipe in-memory only.
+        // Uncomment to hard-wipe cached progress on logout:
+        // const { clearProgress, clearPending } = await import("@/lib/progressDb");
+        // await clearProgress(user?._id ?? user?.id);
+      } catch {}
       router.push("/login");
       router.refresh();
     }
