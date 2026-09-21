@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export const metadata = {
-  title: "Forgot password — Codingo",
+  title: { absolute: "Forgot password — Codingo" },
+  robots: { index: false, follow: false },
 };
 
 export default function ForgotPasswordPage() {

@@ -3,7 +3,8 @@ import { getCurrentUser } from "@/lib/auth";
 import { OnboardingWizard } from "@/components/onboarding/OnboardingWizard";
 
 export const metadata = {
-  title: "Onboarding — Codingo",
+  title: { absolute: "Onboarding — Codingo" },
+  robots: { index: false, follow: false },
 };
 
 export default async function OnboardingPage() {

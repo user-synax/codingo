@@ -17,9 +17,34 @@ async function getProfile(username) {
 
 export async function generateMetadata({ params }) {
   const { username } = await params;
+  const { res, data } = await fetchPublicProfile(username);
+  const profile = res.ok ? data?.user : null;
+  // Private profiles (and missing ones) stay out of the index; the page
+  // itself still renders (or 404s) for visitors.
+  if (!profile || profile.isPrivate) {
+    return {
+      title: { absolute: `@${username} — Codingo` },
+      robots: { index: false, follow: false },
+    };
+  }
+  const name = profile.name ?? profile.username;
+  const xp = profile.xp ?? 0;
+  const level = profile.level ?? 1;
   return {
-    title: `@${username} — Codingo`,
-    description: `See @${username}'s coding progress on Codingo.`,
+    title: { absolute: `@${username} — Codingo` },
+    description: `${name} is learning to code on Codingo — ${xp} XP, level ${level}. Join free and start your own streak.`,
+    alternates: { canonical: `/u/${username}` },
+    openGraph: {
+      title: `@${username} on Codingo`,
+      description: `${name} — ${xp} XP, level ${level}. Learn to code free, fun, together.`,
+      type: "profile",
+      username: profile.username,
+    },
+    twitter: {
+      card: "summary",
+      title: `@${username} on Codingo`,
+      description: `${name} — ${xp} XP, level ${level}. Learn to code free, fun, together.`,
+    },
   };
 }
 

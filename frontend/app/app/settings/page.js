@@ -5,7 +5,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { SettingsForm } from "@/components/settings/SettingsForm";
 
 export const metadata = {
-  title: "Settings — Codingo",
+  title: { absolute: "Settings — Codingo" },
 };
 
 export default async function SettingsPage() {

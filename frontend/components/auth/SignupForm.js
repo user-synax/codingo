@@ -290,13 +290,19 @@ export function SignupForm() {
 
       <p className="font-codingo-sans text-[13px] font-medium leading-[1.23] text-pencil-gray">
         By creating an account you agree to our{" "}
-        <a href="#" className="font-bold text-spark-blue hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-spark-blue">
+        <Link
+          href="/terms"
+          className="font-bold text-spark-blue hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-spark-blue"
+        >
           Terms
-        </a>{" "}
+        </Link>{" "}
         and{" "}
-        <a href="#" className="font-bold text-spark-blue hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-spark-blue">
+        <Link
+          href="/privacy"
+          className="font-bold text-spark-blue hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-spark-blue"
+        >
           Privacy Policy
-        </a>
+        </Link>
         .
       </p>
 

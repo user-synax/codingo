@@ -1,5 +1,6 @@
 import { Nunito, Nunito_Sans } from "next/font/google";
 import "./globals.css";
+import { siteUrl, SITE_DESCRIPTION, SITE_NAME, SITE_TAGLINE, OG_IMAGE } from "@/lib/site";
 
 /* design.md substitutes: feather/ codingo-sans are unavailable, so
    Nunito (800/900) backs --font-feather (display) and Nunito Sans
@@ -19,10 +20,30 @@ const codingoSans = Nunito_Sans({
   display: "swap",
 });
 
+const BASE = siteUrl();
+
 export const metadata = {
-  title: "Codingo - Learn programming in fun way",
-  description:
-    "A free web app for learning programming through short, gamified lessons with the look and feel of Duolingo.",
+  metadataBase: new URL(BASE),
+  title: {
+    default: `${SITE_NAME} — ${SITE_TAGLINE}`,
+    template: `%s | ${SITE_NAME}`,
+  },
+  description: SITE_DESCRIPTION,
+  keywords: [
+    "learn to code",
+    "learn programming free",
+    "coding for beginners",
+    "javascript lessons",
+    "code with AI",
+    "duolingo for coding",
+    "programming practice",
+    "coding streak",
+  ],
+  authors: [{ name: "Ayush", url: "https://github.com/user-synax" }],
+  creator: SITE_NAME,
+  alternates: {
+    canonical: "/",
+  },
   manifest: "/site.webmanifest",
   icons: {
     icon: [
@@ -47,16 +68,30 @@ export const metadata = {
     ],
   },
   openGraph: {
-    title: "Codingo - Learn programming in fun way",
-    description:
-      "A free web app for learning programming through short, gamified lessons with the look and feel of Duolingo.",
+    title: `${SITE_NAME} — ${SITE_TAGLINE}`,
+    description: SITE_DESCRIPTION,
+    url: BASE,
+    siteName: SITE_NAME,
+    locale: "en_US",
     type: "website",
+    images: [
+      {
+        url: OG_IMAGE,
+        width: 512,
+        height: 512,
+        alt: `${SITE_NAME} logo — learn to code free, fun, together`,
+      },
+    ],
   },
   twitter: {
     card: "summary",
-    title: "Codingo - Learn programming in fun way",
-    description:
-      "A free web app for learning programming through short, gamified lessons with the look and feel of Duolingo.",
+    title: `${SITE_NAME} — ${SITE_TAGLINE}`,
+    description: SITE_DESCRIPTION,
+    images: [OG_IMAGE],
+  },
+  robots: {
+    index: true,
+    follow: true,
   },
 };
 

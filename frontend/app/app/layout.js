@@ -6,7 +6,8 @@ import { TopbarStats } from "@/components/app/UserStats";
 import { BrandLogo } from "@/components/BrandLogo";
 
 export const metadata = {
-  title: "App — Codingo",
+  title: { absolute: "App — Codingo" },
+  robots: { index: false, follow: false },
 };
 
 export default async function AppLayout({ children }) {

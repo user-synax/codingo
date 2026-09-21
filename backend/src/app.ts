@@ -24,18 +24,33 @@ export function createApp() {
   app.use(express.json({ limit: "100kb" }));
   app.use(express.urlencoded({ extended: false }));
 
-  // Production (Vercel × Render) is cross-site with credentials, so the
+  // Production (custom domain × Render) is cross-site with credentials, so the
   // allowlist is strict there. Local dev stays permissive for ease.
-  const allowedOrigins = [env.frontendUrl, "http://localhost:3000", "http://127.0.0.1:3000"];
+  // FRONTEND_URL may be a single origin or a comma-separated list.
+  // The canonical prod origins are always allowed so a stale Render env var
+  // can't take down auth with a CORS preflight failure.
+  const normalizeOrigin = (v: string) => v.trim().replace(/\/+$/, "");
+  const allowedOrigins = new Set(
+    [
+      ...env.frontendUrl.split(",").map(normalizeOrigin),
+      "https://codingo.synax.me",
+      "https://www.codingo.synax.me",
+      "http://localhost:3000",
+      "http://127.0.0.1:3000",
+    ].filter(Boolean),
+  );
   app.use(
     cors({
       origin(origin, cb) {
         if (!origin) return cb(null, true);
-        if (allowedOrigins.includes(origin)) return cb(null, true);
+        if (allowedOrigins.has(normalizeOrigin(origin))) return cb(null, true);
         if (!env.isProd) return cb(null, true); // allow all for dev ease only
         return cb(new Error("CORS: origin not allowed."));
       },
       credentials: true,
+      methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+      allowedHeaders: ["Content-Type", "Authorization"],
+      optionsSuccessStatus: 204,
     }),
   );
 

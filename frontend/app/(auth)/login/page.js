@@ -2,7 +2,7 @@ import { AuthCard } from "@/components/auth/AuthCard";
 import { LoginForm } from "@/components/auth/LoginForm";
 
 export const metadata = {
-  title: "Log in — Codingo",
+  title: { absolute: "Log in — Codingo" },
   description: "Log in to Codingo and keep your streak going.",
 };
 
