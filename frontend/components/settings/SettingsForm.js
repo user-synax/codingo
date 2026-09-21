@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { Camera, Check, Eye, EyeOff, Loader2 } from "lucide-react";
 import { CountrySelect } from "@/components/onboarding/CountrySelect";
 import { UserAvatar } from "@/components/app/UserAvatar";
+import { InstallApp } from "@/components/pwa/InstallApp";
 import { TIMEZONES } from "@/lib/timezones";
 import { updateMe, uploadAvatarFile } from "@/lib/api";
 import { Label } from "@/components/ui/label";
@@ -278,8 +279,10 @@ export function SettingsForm({ user }) {
         </div>
       </div>
 
-      {status ? (
-        <p
+      {/* Install */}
+      <InstallApp />
+
+      {status ? (        <p
           role={status.ok ? "status" : "alert"}
           className={
             status.ok

@@ -6,19 +6,30 @@
 export const API_BASE =
   process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "http://localhost:4000";
 
-export async function apiFetch(path, { method = "GET", body, headers, ...init } = {}) {
+export async function apiFetch(path, { method = "GET", body, headers, timeoutMs = 30000, signal, ...init } = {}) {
   const url = `${API_BASE}${path.startsWith("/") ? path : `/${path}`}`;
   const isForm = typeof FormData !== "undefined" && body instanceof FormData;
-  const res = await fetch(url, {
-    method,
-    headers: {
-      ...(isForm ? {} : { "Content-Type": "application/json" }),
-      ...headers,
-    },
-    credentials: "include",
-    body: body !== undefined ? (isForm ? body : JSON.stringify(body)) : undefined,
-    ...init,
-  });
+  let res;
+  try {
+    res = await fetch(url, {
+      method,
+      headers: {
+        ...(isForm ? {} : { "Content-Type": "application/json" }),
+        ...headers,
+      },
+      credentials: "include",
+      // Never leave the UI on an endless spinner: Render cold starts and
+      // database stalls must surface as a catchable error instead.
+      signal: signal ?? AbortSignal.timeout(timeoutMs),
+      body: body !== undefined ? (isForm ? body : JSON.stringify(body)) : undefined,
+      ...init,
+    });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "TimeoutError") {
+      throw new Error("Request timed out — the server is waking up or busy. Try again in a moment.");
+    }
+    throw err;
+  }
 
   const text = await res.text();
   let data = null;

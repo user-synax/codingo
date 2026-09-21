@@ -1,11 +1,15 @@
 {
+  "id": "/",
+  "scope": "/",
   "name": "Codingo",
   "short_name": "Codingo",
   "description": "Learn programming for free — bite-sized lessons, real code, and a community that has your back.",
   "start_url": "/",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#ffffff",
   "theme_color": "#58cc02",
+  "categories": ["education"],
   "icons": [
     {
       "src": "/android-chrome-192x192.png",

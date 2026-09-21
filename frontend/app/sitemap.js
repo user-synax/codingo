@@ -10,7 +10,7 @@ export default function sitemap() {
     { path: "/", priority: 1, changeFrequency: "weekly" },
     { path: "/signup", priority: 0.8, changeFrequency: "monthly" },
     { path: "/login", priority: 0.5, changeFrequency: "monthly" },
-    { path: "/privacy", priority: 0.3, changeFrequency: "yearly" },
+    { path: "/policy", priority: 0.3, changeFrequency: "yearly" },
     { path: "/terms", priority: 0.3, changeFrequency: "yearly" },
   ];
   return pages.map((p) => ({

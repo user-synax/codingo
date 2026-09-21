@@ -1,6 +1,7 @@
 import { Nunito, Nunito_Sans } from "next/font/google";
 import "./globals.css";
 import { siteUrl, SITE_DESCRIPTION, SITE_NAME, SITE_TAGLINE, OG_IMAGE } from "@/lib/site";
+import { RegisterSW } from "@/components/pwa/RegisterSW";
 
 /* design.md substitutes: feather/ codingo-sans are unavailable, so
    Nunito (800/900) backs --font-feather (display) and Nunito Sans
@@ -93,6 +94,11 @@ export const metadata = {
     index: true,
     follow: true,
   },
+  appleWebApp: {
+    capable: true,
+    title: SITE_NAME,
+    statusBarStyle: "default",
+  },
 };
 
 export const viewport = {
@@ -106,6 +112,7 @@ export default function RootLayout({ children }) {
       className={`${feather.variable} ${codingoSans.variable} h-full antialiased`}
     >
       <body className="min-h-full bg-paper-white font-codingo-sans text-charcoal">
+        <RegisterSW />
         {children}
       </body>
     </html>

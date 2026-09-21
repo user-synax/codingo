@@ -3,6 +3,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import { env } from "./config/env.js";
+import { requireDb } from "./middleware/db.js";
 import authRouter from "./routes/auth.js";
 import coursesRouter from "./routes/courses.js";
 import lessonsRouter from "./routes/lessons.js";
@@ -57,6 +58,10 @@ export function createApp() {
   app.get("/api/health", (_req, res) => {
     res.json({ ok: true, service: "codingo-backend", env: env.nodeEnv });
   });
+
+  // Every other /api route needs MongoDB — fail fast with 503 instead of
+  // buffering the query and leaving the client hanging on a spinner.
+  app.use("/api", requireDb);
 
   app.use("/api/auth", authRouter);
   app.use("/api/courses", coursesRouter);
