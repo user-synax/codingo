@@ -23,24 +23,28 @@ export const cookieName = COOKIE_NAME;
 export const cookieMaxAge = COOKIE_MAX_AGE_MS;
 
 export function cookieOptions() {
-  // Vercel frontend × Render backend are different sites: cross-site fetch
-  // never sends SameSite=Lax cookies, so production needs SameSite=None
-  // (which requires Secure — already true in prod, browsers accept it since
-  // Render serves HTTPS). Local dev keeps Lax so http://localhost keeps working.
-  return {
+  // Same-origin API (Next rewrites /api/* to the backend), so the session
+  // cookie is first-party: SameSite=Lax works everywhere and keeps decent
+  // CSRF protection. `domain` scopes it to the frontend host — required in
+  // split deployments, because without it the cookie would belong to the
+  // backend's host and the Next server would never see it (invisible session
+  // → redirect loops after login). Unset locally: host-only localhost.
+  const base = {
     httpOnly: true as const,
     secure: env.isProd,
-    sameSite: (env.isProd ? "none" : "lax") as "none" | "lax",
+    sameSite: "lax" as const,
     maxAge: COOKIE_MAX_AGE_MS,
     path: "/" as const,
   };
+  return env.cookieDomain ? { ...base, domain: env.cookieDomain } : base;
 }
 
 export function clearCookieOptions() {
-  return {
+  const base = {
     httpOnly: true as const,
     secure: env.isProd,
-    sameSite: (env.isProd ? "none" : "lax") as "none" | "lax",
+    sameSite: "lax" as const,
     path: "/" as const,
   };
+  return env.cookieDomain ? { ...base, domain: env.cookieDomain } : base;
 }

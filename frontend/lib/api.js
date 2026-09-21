@@ -1,10 +1,15 @@
-/* Central API helper — talks to the separate Express backend.
-   API base comes from NEXT_PUBLIC_API_URL, defaulting to
-   http://localhost:4000 for local dev (matches backend/.env PORT).
-   Cookies are httpOnly, so every request must use credentials: include. */
+/* Central API helper — talks to the Express backend through same-origin
+   rewrites (/api/* → backend, see next.config.mjs), so the session cookie
+   stays first-party and works in both client components and server fetches.
+   - Browser: relative "/api/…" (same origin, no CORS, cookie auto-sent).
+   - Next server: relative URLs are invalid in server fetches, so use the
+     absolute backend URL (BACKEND_URL, falling back to NEXT_PUBLIC_API_URL). */
+
+const PUBLIC_BASE =
+  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "http://localhost:4000";
 
 export const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "http://localhost:4000";
+  typeof window === "undefined" ? (process.env.BACKEND_URL ?? PUBLIC_BASE) : "";
 
 export async function apiFetch(path, { method = "GET", body, headers, timeoutMs = 30000, signal, ...init } = {}) {
   const url = `${API_BASE}${path.startsWith("/") ? path : `/${path}`}`;

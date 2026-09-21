@@ -12,6 +12,11 @@ export const env = {
   mongoUri: requireEnv("MONGODB_URI", "mongodb://localhost:27017/codingo"),
   jwtSecret: requireEnv("JWT_SECRET"),
   frontendUrl: process.env.FRONTEND_URL ?? "http://localhost:3000",
+  // Cookie domain for split deployments behind same-origin rewrites.
+  // The backend sets the session cookie, but the browser only talks to the
+  // frontend domain — so the cookie must be scoped to it (e.g. COOKIE_DOMAIN
+  // = codingo.synax.me on Render). Unset in dev: host-only localhost cookies.
+  cookieDomain: process.env.COOKIE_DOMAIN ?? "",
   nodeEnv: process.env.NODE_ENV ?? "development",
   isProd: (process.env.NODE_ENV ?? "development") === "production",
   // Appwrite avatar storage (server-side, API key never leaves the backend).

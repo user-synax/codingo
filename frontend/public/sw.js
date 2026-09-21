@@ -5,7 +5,7 @@
    - Everything else (RSC payloads, pages): network-first with cache fallback.
    Bump VERSION to force a clean refresh of all caches. */
 
-const VERSION = "codingo-v1";
+const VERSION = "codingo-v2";
 const OFFLINE_URL = "/offline";
 const CORE = [OFFLINE_URL, "/android-chrome-192x192.png", "/apple-touch-icon.png"];
 
@@ -76,6 +76,10 @@ self.addEventListener("fetch", (event) => {
   const { request } = event;
   const url = new URL(request.url);
   if (request.method !== "GET" || url.origin !== self.location.origin) return;
+
+  // API is same-origin (rewrites) but must NEVER be cached: auth, progress,
+  // threads, and AI answers are per-user and time-sensitive. Network only.
+  if (url.pathname.startsWith("/api/")) return;
 
   if (request.mode === "navigate") {
     event.respondWith(networkFirst(request, OFFLINE_URL));
