@@ -267,7 +267,7 @@ Design rules:
   1. User signs up → account created → redirected to `/onboarding`
   2. Onboarding completes → `PATCH /api/auth/onboarding` → `onboardingCompleted: true`
   3. On subsequent visits → `getCurrentUser()` returns user → if `onboardingCompleted` → `/app`, else `/onboarding`
-- **Google OAuth**: stubmed (`/api/auth/google` returns 501) — email/password only for now
+- **Google sign-in**: official button (Google Identity Services) on login/signup sends the ID token to `POST /api/auth/google`, which verifies audience + expiry, requires a verified email, then signs in (by `googleId`), auto-links a matching password account, or creates one (temp `google_user_*` username picked for real in onboarding; Google name + picture prefilled). Needs `GOOGLE_CLIENT_ID` (backend) + `NEXT_PUBLIC_GOOGLE_CLIENT_ID` (frontend), else 501.
 - **CORS**: configured in backend for `http://localhost:3000` and `http://localhost:4000`
 
 ---
@@ -290,8 +290,8 @@ Design rules:
 | `POST` | `/api/auth/login` | No | Login (rate-limited: 20/15min) |
 | `POST` | `/api/auth/logout` | No | Clear cookie, log out |
 | `GET` | `/api/auth/me` | Yes | Get current user |
-| `PATCH` | `/api/auth/onboarding` | Yes | Complete onboarding |
-| `GET` | `/api/auth/google` | No | Google OAuth stub (501) |
+| `PATCH` | `/api/auth/onboarding` | Yes | Complete onboarding (Google users also pick a username) |
+| `POST` | `/api/auth/google` | No | Google ID-token sign-in: verify, auto-link or create (rate-limited; 501 until configured) |
 | `GET` | `/api/courses` | No | List all courses with units/lessons |
 | `GET` | `/api/courses/:courseId/units` | No | Get units for a course |
 | `GET` | `/api/lessons/:id` | Yes | Get lesson with exercises |
@@ -630,7 +630,6 @@ From `DESIGN.md` and `PRD.md`:
 - Which LLM provider and model for the AI helper?
 - Should shared solutions be visible before or only after completing the exercise?
 - Branding: "Codingo" is used by existing apps — decision needed if publishing to app stores
-- Google OAuth integration
 - Appwrite avatar upload configuration
 
 ---

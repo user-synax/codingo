@@ -6,8 +6,8 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { GoogleIcon } from "@/components/auth/GoogleIcon";
-import { registerUser, API_BASE } from "@/lib/api";
+import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
+import { registerUser, googleSignIn, API_BASE } from "@/lib/api";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -126,6 +126,31 @@ export function SignupForm() {
   }
 
   const err = (k) => (touched[k] ? errors[k] : undefined);
+
+  async function handleGoogleSuccess(credentialResponse) {
+    setGoogleNote(null);
+    setServerError(null);
+    const credential = credentialResponse?.credential;
+    if (!credential) {
+      setGoogleNote("Google sign-in failed. Try again.");
+      return;
+    }
+    try {
+      const { res, data } = await googleSignIn({ credential });
+      if (!res.ok) {
+        setServerError(data?.message ?? "Google sign-in failed. Try again.");
+        return;
+      }
+      setDone(true);
+      const dest = data?.user?.onboardingCompleted ? "/app" : "/onboarding";
+      window.setTimeout(() => {
+        router.push(dest);
+        router.refresh();
+      }, 600);
+    } catch {
+      setServerError("Network error. Is the backend running at " + API_BASE + "?");
+    }
+  }
 
   return (
     <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
@@ -311,24 +336,11 @@ export function SignupForm() {
         <div className="h-px flex-1 bg-faded-gray/60" aria-hidden="true" />
       </div>
 
-      <Button
-        type="button"
-        variant="outline"
-        className="w-full bg-paper-white"
-        onClick={async () => {
-          setGoogleNote(null);
-          setServerError(null);
-          try {
-            const { data } = await (await import("@/lib/api")).apiFetch("/api/auth/google");
-            setGoogleNote(data?.message ?? "Google OAuth not configured yet.");
-          } catch {
-            setGoogleNote("Google OAuth not configured yet. Use email/password for now.");
-          }
-        }}
-      >
-        <GoogleIcon />
-        Continue with Google
-      </Button>
+      {/* Google — official button; ID token verified by the backend */}
+      <GoogleSignInButton
+        onSuccess={handleGoogleSuccess}
+        onError={() => setGoogleNote("Google sign-in failed. Try again.")}
+      />
       {googleNote ? (
         <p role="status" className="rounded-[12px] border-2 border-faded-gray bg-paper-white px-4 py-2 text-center font-codingo-sans text-[13px] font-medium leading-[1.23] text-pencil-gray">
           {googleNote}

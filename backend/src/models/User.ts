@@ -4,7 +4,10 @@ export interface IUser extends Document {
   _id: mongoose.Types.ObjectId;
   username: string;
   email: string;
-  password: string;
+  // Optional — Google-only accounts have no password until they set one.
+  password?: string;
+  // Google account id (ID-token `sub`). Set on Google sign-in / auto-link.
+  googleId?: string | null;
   name: string;
   avatar?: string;
   xp: number;
@@ -48,10 +51,12 @@ const UserSchema = new Schema<IUser>(
     },
     password: {
       type: String,
-      required: true,
+      required: false,
       minlength: 6,
       select: false, // never return by default
     },
+    // Google account id — unique when present, absent for email/password users
+    googleId: { type: String, default: null, index: true },
     name: { type: String, required: true, trim: true },
     avatar: { type: String, default: undefined },
     xp: { type: Number, default: 0 },
@@ -73,6 +78,11 @@ const UserSchema = new Schema<IUser>(
     onboardingCompleted: { type: Boolean, default: false },
   },
   { timestamps: true },
+);
+
+UserSchema.index(
+  { googleId: 1 },
+  { unique: true, sparse: true },
 );
 
 // Case-insensitive uniqueness: store lowercased via collation, enforce via index

@@ -18,6 +18,9 @@ export function OnboardingWizard({ user }) {
 
   // Step 1: profile
   const [displayName, setDisplayName] = useState(user?.name ?? user?.username ?? "");
+  // Google signups arrive with a temp `google_user_*` username — they pick a real one here.
+  const needsUsername = user?.needsUsername === true;
+  const [username, setUsername] = useState("");
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState(user?.avatar ?? null);
 
@@ -41,6 +44,13 @@ export function OnboardingWizard({ user }) {
       if (!displayName.trim()) e.displayName = "Display name is required.";
       else if (displayName.trim().length < 2) e.displayName = "At least 2 characters.";
       else if (displayName.trim().length > 50) e.displayName = "At most 50 characters.";
+      if (needsUsername) {
+        const u = username.trim();
+        if (!u) e.username = "Username is required.";
+        else if (u.length < 3) e.username = "At least 3 characters.";
+        else if (u.length > 30) e.username = "At most 30 characters.";
+        else if (!/^[a-zA-Z0-9_.-]+$/.test(u)) e.username = "Letters, numbers, _ . - only.";
+      }
     }
     if (s === 2) {
       const n = Number(age);
@@ -108,6 +118,7 @@ export function OnboardingWizard({ user }) {
         countryCode,
         language,
         ...(avatarUrl ? { avatar: avatarUrl } : {}),
+        ...(needsUsername ? { username: username.trim() } : {}),
       };
 
       const { res, data } = await patchOnboarding(payload);
@@ -116,7 +127,7 @@ export function OnboardingWizard({ user }) {
         if (Object.keys(fieldErrors).length) setErrors((prev) => ({ ...prev, ...fieldErrors }));
         setServerError(data?.message ?? "Something went wrong.");
         // jump to step with first field error
-        if (fieldErrors.displayName || fieldErrors.name) setStep(1);
+        if (fieldErrors.displayName || fieldErrors.name || fieldErrors.username) setStep(1);
         else if (fieldErrors.age || fieldErrors.country) setStep(2);
         else if (fieldErrors.language) setStep(3);
         return;
@@ -205,10 +216,34 @@ export function OnboardingWizard({ user }) {
               <p id="onboarding-name-error" className="font-codingo-sans text-[13px] font-medium leading-[1.23] text-destructive">
                 {errors.displayName}
               </p>
+            ) : needsUsername ? (
+              <p className="font-codingo-sans text-[13px] font-medium leading-[1.23] text-pencil-gray">This is your public name. Pick your username below.</p>
             ) : (
               <p className="font-codingo-sans text-[13px] font-medium leading-[1.23] text-pencil-gray">This is your public name. Username @{user?.username} stays private.</p>
             )}
           </div>
+
+          {needsUsername ? (
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="onboarding-username">Username</Label>
+              <Input
+                id="onboarding-username"
+                autoComplete="username"
+                placeholder="e.g. alex_codes"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                aria-invalid={errors.username ? "true" : undefined}
+                aria-describedby={errors.username ? "onboarding-username-error" : undefined}
+              />
+              {errors.username ? (
+                <p id="onboarding-username-error" className="font-codingo-sans text-[13px] font-medium leading-[1.23] text-destructive">
+                  {errors.username}
+                </p>
+              ) : (
+                <p className="font-codingo-sans text-[13px] font-medium leading-[1.23] text-pencil-gray">Unique, 3–30 chars. Letters, numbers, _ . - only.</p>
+              )}
+            </div>
+          ) : null}
         </div>
       ) : null}
 

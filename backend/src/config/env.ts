@@ -20,6 +20,10 @@ export const env = {
   appwriteProjectId: process.env.APPWRITE_PROJECT_ID ?? "",
   appwriteBucketId: process.env.APPWRITE_BUCKET_ID ?? "",
   appwriteApiKey: process.env.APPWRITE_API_KEY ?? "",
+  // Google sign-in (ID-token / credential flow via the official Google button).
+  // Only the Client ID is needed — the backend verifies the ID token audience.
+  // Empty until the Google Cloud OAuth client is created (returns 501 meanwhile).
+  googleClientId: process.env.GOOGLE_CLIENT_ID ?? "",
   // AI doubt helper (PRD 5.6) — Groq primary, OpenRouter optional fallback.
   groqApiKey: process.env.GROQ_API_KEY ?? "",
   openrouterApiKey: process.env.OPENROUTER_API_KEY ?? "",
@@ -34,6 +38,8 @@ export const env = {
     return Number.isFinite(v) && v > 0 ? v : 3 * 60 * 1000;
   })(),
 } as const;
+
+export const isGoogleConfigured = Boolean(env.googleClientId);
 
 export const isAppwriteConfigured =
   Boolean(env.appwriteEndpoint) &&

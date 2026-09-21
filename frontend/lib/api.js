@@ -53,6 +53,15 @@ export async function logoutUser() {
   return apiFetch("/api/auth/logout", { method: "POST" });
 }
 
+/* Google sign-in — official-button ID token verified by the backend.
+   Returns { user, isNewUser }; new users still need the onboarding wizard. */
+export async function googleSignIn({ credential }) {
+  return apiFetch("/api/auth/google", {
+    method: "POST",
+    body: { credential },
+  });
+}
+
 export async function patchOnboarding(payload) {
   return apiFetch("/api/auth/onboarding", {
     method: "PATCH",
