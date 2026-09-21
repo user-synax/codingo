@@ -386,12 +386,43 @@
 .sheet-content-right[data-state="closed"] {
   animation: sheet-out-right var(--panel-close-dur) var(--panel-ease);
 }
+@keyframes sheet-in-bottom {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+    filter: blur(var(--panel-blur));
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+@keyframes sheet-out-bottom {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+    filter: blur(0);
+  }
+  to {
+    transform: translateY(100%);
+    opacity: 0;
+    filter: blur(var(--panel-blur));
+  }
+}
+.sheet-content-bottom[data-state="open"] {
+  animation: sheet-in-bottom var(--panel-open-dur) var(--panel-ease);
+}
+.sheet-content-bottom[data-state="closed"] {
+  animation: sheet-out-bottom var(--panel-close-dur) var(--panel-ease);
+}
 
 @media (prefers-reduced-motion: reduce) {
   .codingo-btn,
   .nav-link,
   .sheet-overlay,
   .sheet-content-right,
+  .sheet-content-bottom,
   .auth-card {
     transition: none !important;
   }
@@ -404,6 +435,8 @@
   .sheet-overlay[data-state="closed"],
   .sheet-content-right[data-state="open"],
   .sheet-content-right[data-state="closed"],
+  .sheet-content-bottom[data-state="open"],
+  .sheet-content-bottom[data-state="closed"],
   .auth-card {
     animation: none !important;
   }

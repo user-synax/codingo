@@ -29,7 +29,7 @@ export default async function AppLayout({ children }) {
         </header>
         <main className="flex-1 px-4 py-6 pb-[88px] sm:px-6 lg:px-8 md:pb-8">{children}</main>
       </div>
-      <BottomNav />
+      <BottomNav user={user} />
     </div>
   );
 }

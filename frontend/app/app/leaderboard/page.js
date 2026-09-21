@@ -88,7 +88,7 @@ function PodiumCard({ entry, place, highlight }) {
         <RankBadge rank={place} />
       </div>
       <Link href={`/u/${entry.username}`} className="mt-2 flex flex-col items-center gap-2">
-        <UserAvatar src={entry.avatar} name={entry.name} username={entry.username} boxClass="h-[56px] w-[56px] rounded-[16px] text-[20px] sm:h-[64px] sm:w-[64px] sm:rounded-[20px] sm:text-[22px]" />
+        <UserAvatar src={entry.avatar} name={entry.name} username={entry.username} boxClass="h-20 w-20 rounded-[20px] text-[26px] sm:h-[84px] sm:w-[84px] sm:rounded-[22px] sm:text-[32px] border-2 border-faded-gray" />
         <div>
           <p className="max-w-[140px] truncate font-codingo-sans text-[15px] font-black leading-[1.2] text-charcoal">{entry.name}</p>
           <p className="max-w-[140px] truncate font-codingo-sans text-[12px] font-bold leading-[1.2] text-pencil-gray">@{entry.username}</p>
@@ -318,7 +318,7 @@ export default async function LeaderboardPage({ searchParams }) {
                     </span>
 
                     <Link href={`/u/${entry.username}`} className="flex min-w-0 flex-1 items-center gap-3">
-                      <UserAvatar src={entry.avatar} name={entry.name} username={entry.username} boxClass="h-10 w-10 rounded-[12px] text-[14px] sm:h-11 sm:w-11 sm:rounded-[12px] sm:text-[15px]" />
+                      <UserAvatar src={entry.avatar} name={entry.name} username={entry.username} boxClass="h-12 w-12 rounded-[14px] text-[16px] sm:h-14 sm:w-14 sm:rounded-[16px] sm:text-[18px] border-2 border-faded-gray" />
                       <div className="min-w-0 flex-1">
                         <p className="truncate font-codingo-sans text-[14px] font-black leading-[1.2] text-charcoal sm:text-[15px]">
                           {entry.name}
@@ -367,7 +367,7 @@ export default async function LeaderboardPage({ searchParams }) {
                   <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-eager-green font-codingo-sans text-[11px] font-black leading-none text-paper-white sm:hidden">
                     {me.rank}
                   </span>
-                  <UserAvatar src={me.avatar} name={me.name} username={me.username} boxClass="h-10 w-10 rounded-[12px] text-[14px] sm:h-11 sm:w-11 sm:rounded-[12px] sm:text-[15px]" />
+                  <UserAvatar src={me.avatar} name={me.name} username={me.username} boxClass="h-12 w-12 rounded-[14px] text-[16px] sm:h-14 sm:w-14 sm:rounded-[16px] sm:text-[18px] border-2 border-faded-gray" />
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-codingo-sans text-[14px] font-black leading-[1.2] text-charcoal">
                       {me.name} <span className="rounded-full bg-eager-green px-2 py-0.5 font-codingo-sans text-[10px] font-black uppercase leading-none tracking-[0.04em] text-paper-white">You</span>

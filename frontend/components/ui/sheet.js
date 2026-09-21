@@ -40,6 +40,8 @@ const sheetVariants = cva("fixed z-50 flex flex-col bg-paper-white", {
     side: {
       right:
         "sheet-content-right inset-y-0 right-0 h-full w-[300px] border-l-2 border-l-faded-gray sm:w-[360px]",
+      bottom:
+        "sheet-content-bottom inset-x-0 bottom-0 max-h-[82vh] w-full rounded-t-[20px] border-t-2 border-faded-gray",
     },
   },
   defaultVariants: {
