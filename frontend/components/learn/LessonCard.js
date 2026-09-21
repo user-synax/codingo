@@ -100,11 +100,11 @@ export function LessonCard({ lesson, status, draft, index, totalInUnit, unitTitl
 
   const CardInner = (
     <div className={`${cardBase} ${cardStyle}`}>
-      {/* Top row: number + xp + status — number enlarged per feedback */}
+      {/* Top row: number + xp + status — number now XL per feedback */}
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2.5">
-          <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-[13px] border-[2.5px] text-[16px] font-black leading-none shadow-[0_2px_0_rgba(0,0,0,0.08)] sm:h-12 sm:w-12 sm:rounded-[14px] sm:text-[17px] ${isCompleted ? "border-eager-green bg-eager-green text-paper-white shadow-[0_2px_0_var(--color-deep-leaf)]" : isLocked ? "border-faded-gray bg-faded-gray/15 text-pencil-gray" : isContinue ? "border-spark-blue bg-spark-blue text-paper-white shadow-[0_2px_0_#0a8ac2]" : "border-charcoal bg-charcoal text-paper-white shadow-[0_2px_0_rgba(0,0,0,0.18)]"}`}>
-            {isCompleted ? <Check className="h-5 w-5 sm:h-6 sm:w-6" strokeWidth={3} aria-hidden="true" /> : lessonNumber}
+          <span className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-[16px] border-[3px] text-[22px] font-black leading-none shadow-[0_3px_0_rgba(0,0,0,0.10)] sm:h-[60px] sm:w-[60px] sm:rounded-[16px] sm:text-[24px] sm:border-[3px] ${isCompleted ? "border-eager-green bg-eager-green text-paper-white shadow-[0_3px_0_var(--color-deep-leaf)]" : isLocked ? "border-faded-gray bg-faded-gray/15 text-pencil-gray" : isContinue ? "border-spark-blue bg-spark-blue text-paper-white shadow-[0_3px_0_#0a8ac2]" : "border-charcoal bg-charcoal text-paper-white shadow-[0_3px_0_rgba(0,0,0,0.20)]"}`}>
+            {isCompleted ? <Check className="h-7 w-7 sm:h-7 sm:w-7" strokeWidth={3} aria-hidden="true" /> : lessonNumber}
           </span>
           <span className="inline-flex items-center rounded-full bg-faded-gray/15 px-2.5 py-1 font-codingo-sans text-[11px] font-bold leading-none text-pencil-gray">
             {lesson.xpReward ?? 10} XP
