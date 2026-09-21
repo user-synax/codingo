@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { LessonProgressBar } from "@/components/lesson/LessonProgressBar";
@@ -16,12 +16,12 @@ import { runCode, compareOutput } from "@/lib/runner";
 import { playCorrect, playWrong, playComplete, isMuted, toggleMuted } from "@/lib/sound";
 import { Confetti } from "@/components/lesson/Confetti";
 import { AiHelper } from "@/components/lesson/AiHelper";
-import { Volume2, VolumeX, Flame, Heart, Gem, ShoppingBag, Clock, Snowflake } from "lucide-react";
-import { fetchEconomy, consumeHeart } from "@/lib/api";
+import { Volume2, VolumeX, Flame, Clock, PauseCircle } from "lucide-react";
+import * as progressDb from "@/lib/progressDb";
 
 /* Single-screen lesson runner — one exercise at a time, distraction-free.
-   Follows design.md (Paper White, 12px radius, 2px borders, 3D buttons) and
-   transitions-dev: panel reveal for hint, success check on complete, error shake on wrong. */
+   Draft resume (idx + answers + checked) + exit confirm modal, no hearts/CC.
+   Follows design.md (Paper White, 12px radius, 2px borders, 3D buttons) */
 
 function HintPanel({ hints, exercise }) {
   const [open, setOpen] = useState(false);
@@ -55,8 +55,6 @@ function HintPanel({ hints, exercise }) {
   );
 }
 
-/* ai_prompt readiness — prompt written, AI (or example) answered, checklist done.
-   Grading stays deterministic: checklist answers vs solution, never the AI text. */
 function aiPromptReady(v, ex) {
   if (!v || typeof v !== "object") return false;
   if (!(v.prompt ?? "").trim()) return false;
@@ -67,9 +65,43 @@ function aiPromptReady(v, ex) {
   return checks.every((c) => c === true || c === false);
 }
 
+function ExitConfirmModal({ open, onStay, onLeave, current, total }) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <button type="button" aria-label="Close" onClick={onStay} className="absolute inset-0 bg-night-ink/60 backdrop-blur-[2px]" />
+      <div className="relative w-full max-w-[420px] rounded-[16px] border-2 border-faded-gray bg-paper-white p-6 shadow-[0_16px_32px_rgba(0,0,0,0.18)]">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#e6f4ff] text-spark-blue">
+          <PauseCircle className="h-7 w-7" strokeWidth={2} aria-hidden="true" />
+        </div>
+        <h2 className="mt-3 text-center font-codingo-sans text-[20px] font-black leading-[1.2] text-charcoal">Leave lesson?</h2>
+        <p className="mt-2 text-center font-codingo-sans text-[14px] font-medium leading-[1.4] text-pencil-gray">
+          Your progress up to exercise <span className="font-bold text-charcoal">{current}</span> of <span className="font-bold text-charcoal">{total}</span> will be saved. You can continue later from where you left.
+        </p>
+        <div className="mt-1.5 flex justify-center">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-storybook-green px-3 py-1 font-codingo-sans text-[11px] font-bold text-charcoal">
+            <Clock className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+            Resume anytime
+          </span>
+        </div>
+        <div className="mt-5 flex gap-3">
+          <button type="button" onClick={onStay} className="flex-1 rounded-[12px] border-2 border-faded-gray bg-paper-white px-4 py-3 font-codingo-sans text-[14px] font-bold text-charcoal hover:border-charcoal">
+            Stay
+          </button>
+          <button type="button" onClick={onLeave} className="flex-1 rounded-[12px] border-2 border-eager-green bg-eager-green px-4 py-3 font-codingo-sans text-[14px] font-bold text-paper-white shadow-[0_4px_0_var(--color-deep-leaf)] hover:brightness-95">
+            Leave &amp; save
+          </button>
+        </div>
+        <p className="mt-2 text-center font-codingo-sans text-[11px] font-medium text-pencil-gray">Progress saved locally — syncs when you return.</p>
+      </div>
+    </div>
+  );
+}
+
 export function LessonRunner({ lesson, exercises, nextLesson }) {
   const router = useRouter();
   const save = useProgressStore((s) => s.save);
+  const storeUserId = useProgressStore((s) => s.userId);
   const [idx, setIdx] = useState(0);
   const [answers, setAnswers] = useState({});
   const [checked, setChecked] = useState({});
@@ -77,11 +109,16 @@ export function LessonRunner({ lesson, exercises, nextLesson }) {
   const [done, setDone] = useState(false);
   const [saving, setSaving] = useState(false);
   const [celebrate, setCelebrate] = useState(false);
-  // Economy — hearts
-  const [hearts, setHearts] = useState(3);
-  const [cc, setCc] = useState(null);
-  const [heartsOut, setHeartsOut] = useState(false);
-  const [heartMsg, setHeartMsg] = useState(null);
+  const [showExitModal, setShowExitModal] = useState(false);
+  const [draftRestored, setDraftRestored] = useState(false);
+  const draftLoadedRef = useRef(false);
+  const pendingSaveRef = useRef(null);
+  const userIdRef = useRef(storeUserId);
+
+  useEffect(() => {
+    userIdRef.current = storeUserId;
+  }, [storeUserId]);
+
   const [muted, setMuted] = useState(() => {
     try {
       return isMuted();
@@ -99,50 +136,168 @@ export function LessonRunner({ lesson, exercises, nextLesson }) {
     return () => window.removeEventListener("codingo:mute", onMute);
   }, []);
 
-  // Fetch hearts / CC for this lesson — also initial out-check
+  // ----- Draft: load on mount (IndexedDB only) -----
   useEffect(() => {
+    if (!progressDb.isSupported() || !lesson?._id) return;
     let alive = true;
     (async () => {
       try {
-        const { ok, data } = await fetchEconomy();
-        if (alive && ok && data) {
-          setHearts(data.hearts ?? 3);
-          setCc(data.cc ?? 0);
-          if ((data.hearts ?? 3) <= 0) setHeartsOut(true);
+        const uid = storeUserId ?? userIdRef.current ?? "anon";
+        let draft = await progressDb.getLessonDraft(String(lesson._id), uid).catch(() => null);
+        if (!draft && uid && uid !== "anon") {
+          draft = await progressDb.getLessonDraft(String(lesson._id), "anon").catch(() => null);
+        }
+        if (!draft && !uid) {
+          const all = await progressDb.getAllDrafts().catch(() => []);
+          draft = all.find((d) => String(d.lessonId) === String(lesson._id)) ?? null;
+        }
+        if (!alive || !draft) {
+          draftLoadedRef.current = true;
+          return;
+        }
+        const draftIdx = typeof draft.idx === "number" ? draft.idx : 0;
+        const draftTotal = draft.total ?? exercises.length;
+        if (draftIdx >= 0 && draftIdx < exercises.length && draftTotal === exercises.length) {
+          const hasProgress = draft.answers && Object.keys(draft.answers).length > 0;
+          const shouldRestore = hasProgress || draftIdx > 0;
+          if (shouldRestore) {
+            setIdx(Math.min(draftIdx, exercises.length - 1));
+            if (draft.answers) setAnswers(draft.answers);
+            if (draft.checked) setChecked(draft.checked);
+            if (draft.firstTryCorrect) setFirstTryCorrect(draft.firstTryCorrect);
+            setDraftRestored(true);
+          }
         }
       } catch {}
+      draftLoadedRef.current = true;
     })();
     return () => {
       alive = false;
     };
-  }, []);
+  }, [lesson?._id, exercises.length, storeUserId]);
 
   const total = exercises.length;
   const current = exercises[idx];
 
-  const score = useMemo(() => {
-    let correct = 0;
-    for (const ex of exercises) {
-      const v = answers[ex._id];
-      const ch = checked[ex._id];
-      if (!ch) continue;
-      // Simple correctness check per type
-      let ok = false;
-      if (ex.type === "multiple_choice") ok = v === ex.solution?.correctIndex;
-      else if (ex.type === "fill_blank") ok = v === ex.solution?.answer;
-      else if (ex.type === "arrange") ok = JSON.stringify(v) === JSON.stringify(ex.solution?.order);
-      else if (ex.type === "predict_output") ok = String(v).trim() === String(ex.solution?.answer).trim();
-      else if (ex.type === "fix_bug" || ex.type === "write_code") ok = ch === true; // set via inner component? we track via firstTryCorrect
-      // For code types, we rely on firstTryCorrect map set by parent? Instead we treat checked as boolean
-      if (ex.type === "fix_bug" || ex.type === "write_code") ok = firstTryCorrect[ex._id] ?? false;
-      else if (ok) correct++;
-      else if (ex.type !== "fix_bug" && ex.type !== "write_code" && ch) {
-        // for non-code, ch is boolean already? we set checked[ex._id]=isCorrect
-        ok = ch === true;
-        if (ok) correct++;
+  // ----- Draft: persist on every change (debounced) -----
+  const saveDraft = useRef(async (next) => {
+    if (!progressDb.isSupported() || !lesson?._id || done) return;
+    if (!draftLoadedRef.current) return;
+    const hasAnyAnswer = next.answers && Object.keys(next.answers).length > 0;
+    const isAtStartWithNoProgress = next.idx === 0 && !hasAnyAnswer && Object.keys(next.checked).length === 0;
+    if (isAtStartWithNoProgress) return;
+    try {
+      const uid = userIdRef.current ?? storeUserId ?? "anon";
+      await progressDb.putLessonDraft({
+        lessonId: String(lesson._id),
+        userId: uid,
+        idx: next.idx,
+        answers: next.answers,
+        checked: next.checked,
+        firstTryCorrect: next.firstTryCorrect,
+        total,
+        lessonTitle: lesson.title,
+      });
+      window.dispatchEvent(new Event("codingo:draft-update"));
+    } catch {}
+  }).current;
+
+  useEffect(() => {
+    if (!draftLoadedRef.current) return;
+    if (done) return;
+    if (pendingSaveRef.current) clearTimeout(pendingSaveRef.current);
+    pendingSaveRef.current = setTimeout(() => {
+      saveDraft({ idx, answers, checked, firstTryCorrect });
+    }, 300);
+    return () => {
+      if (pendingSaveRef.current) clearTimeout(pendingSaveRef.current);
+    };
+  }, [idx, answers, checked, firstTryCorrect, done, total, lesson._id, lesson.title, saveDraft]);
+
+  useEffect(() => {
+    if (!progressDb.isSupported()) return;
+    const handleBeforeUnload = () => {
+      const uid = userIdRef.current ?? storeUserId ?? "anon";
+      if (!done && draftLoadedRef.current) {
+        try {
+          progressDb.putLessonDraft({
+            lessonId: String(lesson._id),
+            userId: uid,
+            idx,
+            answers,
+            checked,
+            firstTryCorrect,
+            total,
+            lessonTitle: lesson.title,
+          });
+        } catch {}
       }
-    }
-    // For simplicity, compute from firstTryCorrect for code types and direct check for others
+    };
+    const handleVisibility = () => {
+      if (document.visibilityState === "hidden" && !done) {
+        const uid = userIdRef.current ?? storeUserId ?? "anon";
+        progressDb.putLessonDraft({
+          lessonId: String(lesson._id),
+          userId: uid,
+          idx,
+          answers,
+          checked,
+          firstTryCorrect,
+          total,
+          lessonTitle: lesson.title,
+        }).catch(() => {});
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    document.addEventListener("visibilitychange", handleVisibility);
+    window.addEventListener("pagehide", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("pagehide", handleBeforeUnload);
+    };
+  }, [idx, answers, checked, firstTryCorrect, done, total, lesson._id, lesson.title, storeUserId]);
+
+  // Intercept browser Back button to show confirm modal instead of instant leave
+  useEffect(() => {
+    if (done) return;
+    const pushDummy = () => {
+      try {
+        history.pushState({ codingoLessonGuard: true }, "", window.location.href);
+      } catch {}
+    };
+    let pushed = false;
+    const onPopState = (e) => {
+      if (showExitModal) return;
+      if (!done) {
+        e.preventDefault?.();
+        setShowExitModal(true);
+        setTimeout(() => {
+          try {
+            history.pushState({ codingoLessonGuard: true }, "", window.location.href);
+          } catch {}
+        }, 0);
+      }
+    };
+    const t = setTimeout(() => {
+      if (!done) {
+        pushDummy();
+        pushed = true;
+      }
+    }, 500);
+    window.addEventListener("popstate", onPopState);
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener("popstate", onPopState);
+      if (pushed) {
+        try {
+          if (!showExitModal) history.back();
+        } catch {}
+      }
+    };
+  }, [done, showExitModal]);
+
+  const score = useMemo(() => {
     let c = 0;
     for (const ex of exercises) {
       if (ex.type === "multiple_choice") { if (checked[ex._id] === true) c++; }
@@ -153,12 +308,11 @@ export function LessonRunner({ lesson, exercises, nextLesson }) {
       else if (ex.type === "ai_prompt") { if (checked[ex._id] === true) c++; }
     }
     return total ? Math.round((c / total) * 100) : 0;
-  }, [answers, checked, firstTryCorrect, exercises, total]);
+  }, [checked, firstTryCorrect, exercises, total]);
 
   const isLast = idx === total - 1;
   const hasChecked = checked[current?._id] !== undefined;
 
-  // Starter snapshot per code exercise — Check stays locked until edited
   function starterFor(ex) {
     if (!ex) return "";
     if (ex.type === "fix_bug") return ex.content?.code ?? "";
@@ -184,10 +338,6 @@ export function LessonRunner({ lesson, exercises, nextLesson }) {
 
   async function handleCheck() {
     if (checking) return;
-    if (hearts <= 0) {
-      setHeartsOut(true);
-      return;
-    }
     setChecking(true);
     let correct = false;
 
@@ -208,7 +358,6 @@ export function LessonRunner({ lesson, exercises, nextLesson }) {
       if (expected !== null) {
         correct = !res.error && !res.timedOut && compareOutput(res.output, expected);
       } else {
-        // No expected test — just check it runs without error and produces output
         correct = !res.error && !res.timedOut;
       }
     }
@@ -216,24 +365,6 @@ export function LessonRunner({ lesson, exercises, nextLesson }) {
     setChecked((s) => ({ ...s, [current._id]: correct }));
     if (!(current._id in firstTryCorrect)) {
       setFirstTryCorrect((s) => ({ ...s, [current._id]: correct }));
-    } else if (!firstTryCorrect[current._id] && correct) {
-      // keep first try false if it was wrong first time
-    }
-    // Hearts — lose one on wrong answer (1 per 4h regen, buy with CC)
-    if (!correct) {
-      try {
-        const { ok, data } = await consumeHeart();
-        if (ok && typeof data.hearts === "number") {
-          setHearts(data.hearts);
-          if (typeof data.cc === "number") setCc(data.cc);
-          if (data.hearts <= 0) setHeartsOut(true);
-          setHeartMsg(data.hearts <= 0 ? "Out of hearts!" : `-${1} heart`);
-          setTimeout(() => setHeartMsg(null), 1600);
-        } else if (data?.needsPurchase) {
-          setHearts(0);
-          setHeartsOut(true);
-        }
-      } catch {}
     }
     try {
       if (correct) playCorrect();
@@ -250,12 +381,8 @@ export function LessonRunner({ lesson, exercises, nextLesson }) {
     if (isLast) {
       setSaving(true);
       const allCorrectFirstTry = exercises.every((ex) => firstTryCorrect[ex._id] === true);
-      // Count correct for XP: number of checked true
       let correctCount = 0;
       for (const ex of exercises) if (checked[ex._id] === true) correctCount++;
-      // For code types, checked true already means correct, so above covers.
-      // But for code we stored in firstTryCorrect, checked is boolean too, so same.
-      // Ensure at least score-based fallback
       if (correctCount === 0 && score > 0) correctCount = Math.round((score / 100) * total);
       try {
         const res = await save({
@@ -271,11 +398,15 @@ export function LessonRunner({ lesson, exercises, nextLesson }) {
         setCelebrate(true);
         setDone(true);
         try {
+          const uid = userIdRef.current ?? storeUserId ?? "anon";
+          await progressDb.removeLessonDraft(String(lesson._id), uid).catch(() => {});
+          await progressDb.removeLessonDraft(String(lesson._id), "anon").catch(() => {});
+          window.dispatchEvent(new Event("codingo:draft-update"));
+        } catch {}
+        try {
           playComplete();
         } catch {}
       } catch (e) {
-        // Offline: progress is already in IndexedDB + pending queue (IDB-first)
-        // Keep the lesson as "done" locally; it will sync when online.
         const isOffline = typeof navigator !== "undefined" && !navigator.onLine;
         const msg = e?.message ?? "";
         const looksOffline = isOffline || /offline|Failed to fetch|NetworkError|Load failed/i.test(msg);
@@ -283,6 +414,11 @@ export function LessonRunner({ lesson, exercises, nextLesson }) {
         setXpResult(null);
         setCelebrate(true);
         setDone(true);
+        try {
+          const uid = userIdRef.current ?? storeUserId ?? "anon";
+          await progressDb.removeLessonDraft(String(lesson._id), uid).catch(() => {});
+          window.dispatchEvent(new Event("codingo:draft-update"));
+        } catch {}
         try {
           playComplete();
         } catch {}
@@ -293,6 +429,40 @@ export function LessonRunner({ lesson, exercises, nextLesson }) {
     }
     setIdx((i) => i + 1);
   }
+
+  const handleExitRequest = () => {
+    if (done) {
+      router.push("/app/learn");
+      return;
+    }
+    const hasAnyProgress = idx > 0 || Object.keys(answers).length > 0;
+    if (!hasAnyProgress) {
+      router.push("/app/learn");
+      return;
+    }
+    setShowExitModal(true);
+  };
+
+  const handleStay = () => setShowExitModal(false);
+
+  const handleLeaveConfirm = async () => {
+    setShowExitModal(false);
+    try {
+      const uid = userIdRef.current ?? storeUserId ?? "anon";
+      await progressDb.putLessonDraft({
+        lessonId: String(lesson._id),
+        userId: uid,
+        idx,
+        answers,
+        checked,
+        firstTryCorrect,
+        total,
+        lessonTitle: lesson.title,
+      });
+      window.dispatchEvent(new Event("codingo:draft-update"));
+    } catch {}
+    router.push("/app/learn");
+  };
 
   if (done) {
     const xp = xpResult?.xpAwarded ?? lesson.xpReward ?? 10;
@@ -318,17 +488,10 @@ export function LessonRunner({ lesson, exercises, nextLesson }) {
           </div>
         ) : null}
 
-        <div className="grid w-full max-w-[480px] grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="grid w-full max-w-[480px] grid-cols-2 gap-3 sm:grid-cols-3">
           <div className="rounded-[12px] border-2 border-faded-gray bg-paper-white px-4 py-3">
             <p className="font-codingo-sans text-[11px] font-bold uppercase tracking-[0.04em] text-pencil-gray">XP</p>
             <p className="mt-1 font-codingo-sans text-[22px] font-black leading-none text-eager-green">+{xp}</p>
-          </div>
-          <div className="rounded-[12px] border-2 border-faded-gray bg-paper-white px-4 py-3">
-            <p className="font-codingo-sans text-[11px] font-bold uppercase tracking-[0.04em] text-pencil-gray">CC</p>
-            <p className="mt-1 flex items-center justify-center gap-1 font-codingo-sans text-[22px] font-black leading-none text-[#8a6d00]">
-              <Gem className="h-5 w-5" strokeWidth={2.4} aria-hidden="true" />
-              +{xpResult?.ccAwarded ?? (score === 100 ? 15 : 5)}
-            </p>
           </div>
           <div className="rounded-[12px] border-2 border-faded-gray bg-paper-white px-4 py-3">
             <p className="font-codingo-sans text-[11px] font-bold uppercase tracking-[0.04em] text-pencil-gray">Streak</p>
@@ -347,13 +510,6 @@ export function LessonRunner({ lesson, exercises, nextLesson }) {
           <div className="w-full max-w-[480px] rounded-[12px] border-2 border-eager-green bg-storybook-green px-4 py-3">
             <p className="font-codingo-sans text-[14px] font-black text-charcoal">Level up! {levelUp.from} → {levelUp.to}</p>
             <p className="mt-1 font-codingo-sans text-[13px] font-medium text-charcoal">You’ve reached a new level — keep going!</p>
-          </div>
-        ) : null}
-        {xpResult?.freezeUsed ? (
-          <div className="w-full max-w-[480px] rounded-[12px] border-2 border-spark-blue bg-[#e6f7ff] px-4 py-3">
-            <p className="flex items-center justify-center gap-2 font-codingo-sans text-[13px] font-black text-spark-blue">
-              <Snowflake className="h-4 w-4" strokeWidth={2.4} aria-hidden="true" /> Streak freeze used — your streak was saved!
-            </p>
           </div>
         ) : null}
 
@@ -391,56 +547,20 @@ export function LessonRunner({ lesson, exercises, nextLesson }) {
     );
   }
 
-  // Hearts out modal
-  if (heartsOut) {
-    return (
-      <div className="mx-auto flex w-full max-w-[720px] flex-col items-center gap-6 py-10 text-center">
-        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#ffe6e6] text-[#c9184a] border-2 border-[#ffb3b3]">
-          <Heart className="h-10 w-10" strokeWidth={2} fill="currentColor" aria-hidden="true" />
-        </div>
-        <h1 className="font-codingo-sans text-[28px] font-black leading-[1.1] text-charcoal">Out of hearts!</h1>
-        <p className="max-w-[480px] font-codingo-sans text-[15px] font-medium leading-[1.4] text-pencil-gray">You have 0/3 hearts. Hearts refill 1 every 4h (full in 12h) or buy with Codingo Cash (CC).</p>
-        <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-[#ffe6f0] border-2 border-[#ffb3c6] px-3 py-1.5 font-codingo-sans text-[13px] font-black text-[#c9184a]">
-            <Heart className="h-4 w-4" fill="currentColor" strokeWidth={2} aria-hidden="true" /> {hearts}/3
-          </span>
-          {cc !== null ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#fff8e6] border-2 border-[#ffec99] px-3 py-1.5 font-codingo-sans text-[13px] font-black text-charcoal">
-              <Gem className="h-4 w-4" strokeWidth={2} aria-hidden="true" /> {cc} CC
-            </span>
-          ) : null}
-        </div>
-        <div className="grid w-full max-w-[480px] grid-cols-2 gap-3">
-          <button type="button" onClick={() => router.push("/app/shop")} className="flex flex-col items-center gap-1 rounded-[16px] border-2 border-eager-green bg-eager-green px-4 py-4 text-paper-white hover:brightness-95">
-            <ShoppingBag className="h-6 w-6" strokeWidth={2} aria-hidden="true" />
-            <span className="font-codingo-sans text-[14px] font-black">Go to Shop</span>
-            <span className="font-codingo-sans text-[12px] font-bold">20 CC = 1 heart · 50 CC = full</span>
-          </button>
-          <button type="button" onClick={() => router.push("/app/learn")} className="flex flex-col items-center gap-1 rounded-[16px] border-2 border-faded-gray bg-paper-white px-4 py-4 hover:border-charcoal">
-            <Clock className="h-6 w-6 text-pencil-gray" strokeWidth={2} aria-hidden="true" />
-            <span className="font-codingo-sans text-[14px] font-black text-charcoal">Wait for refill</span>
-            <span className="font-codingo-sans text-[12px] font-bold text-pencil-gray">1 per 4h</span>
-          </button>
-        </div>
-        <button type="button" onClick={() => router.push("/app/learn")} className="font-codingo-sans text-[13px] font-bold text-spark-blue hover:underline">Back to path</button>
-      </div>
-    );
-  }
-
   return (
     <div className="mx-auto flex w-full max-w-[720px] flex-col gap-6">
+      <ExitConfirmModal open={showExitModal} onStay={handleStay} onLeave={handleLeaveConfirm} current={idx + 1} total={total} />
+
       <div className="flex items-center gap-2 sm:gap-3">
         <div className="flex-1">
           <LessonProgressBar current={idx + 1} total={total} />
         </div>
-        <span className={`hidden sm:inline-flex items-center gap-1.5 rounded-full border-2 px-2.5 py-1.5 font-codingo-sans text-[12px] font-black leading-none ${hearts <= 0 ? "border-[#ffb3b3] bg-[#ffe6e6] text-[#c9184a] animate-pulse" : hearts === 1 ? "border-[#ffb3b3] bg-[#ffe6e6] text-[#c9184a]" : "border-[#ffb3c6] bg-[#ffe6f0] text-[#c9184a]"}`}>
-          <Heart className="h-4 w-4" strokeWidth={2.2} fill={hearts > 0 ? "currentColor" : "none"} aria-hidden="true" />
-          {hearts}/3
-        </span>
-        <span className="sm:hidden inline-flex items-center gap-1 rounded-full border-2 border-[#ffb3c6] bg-[#ffe6f0] px-2 py-1 font-codingo-sans text-[12px] font-black leading-none text-[#c9184a]">
-          <Heart className="h-3.5 w-3.5" fill={hearts > 0 ? "currentColor" : "none"} strokeWidth={2.4} aria-hidden="true" /> {hearts}
-        </span>
-        {heartMsg ? <span className="hidden sm:inline-flex rounded-full bg-[#c9184a] px-2 py-1 font-codingo-sans text-[11px] font-black leading-none text-paper-white">{heartMsg}</span> : null}
+        {draftRestored ? (
+          <span className="hidden sm:inline-flex items-center gap-1 rounded-full bg-storybook-green px-2.5 py-1 font-codingo-sans text-[11px] font-black leading-none text-charcoal">
+            <Clock className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+            Resumed
+          </span>
+        ) : null}
         <button
           type="button"
           aria-label={muted ? "Unmute sounds" : "Mute sounds"}
@@ -451,6 +571,27 @@ export function LessonRunner({ lesson, exercises, nextLesson }) {
           {muted ? <VolumeX className="h-4 w-4" strokeWidth={2} aria-hidden="true" /> : <Volume2 className="h-4 w-4" strokeWidth={2} aria-hidden="true" />}
         </button>
       </div>
+
+      {draftRestored ? (
+        <div className="rounded-[12px] border-2 border-spark-blue bg-[#e6f4ff] px-4 py-2.5">
+          <p className="flex items-center gap-2 font-codingo-sans text-[13px] font-bold text-spark-blue">
+            <Clock className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
+            Resumed from exercise {idx + 1} — your answers were restored.
+            <button type="button" onClick={async () => {
+              setIdx(0);
+              setAnswers({});
+              setChecked({});
+              setFirstTryCorrect({});
+              setDraftRestored(false);
+              try {
+                const uid = userIdRef.current ?? storeUserId ?? "anon";
+                await progressDb.removeLessonDraft(String(lesson._id), uid);
+                window.dispatchEvent(new Event("codingo:draft-update"));
+              } catch {}
+            }} className="ml-auto font-codingo-sans text-[12px] font-black text-spark-blue underline hover:no-underline">Restart</button>
+          </p>
+        </div>
+      ) : null}
 
       <div className="rounded-[12px] border-2 border-faded-gray bg-paper-white p-5 sm:p-6">
         {current.type === "multiple_choice" ? (
@@ -498,7 +639,7 @@ export function LessonRunner({ lesson, exercises, nextLesson }) {
         <Button
           variant="outline"
           className="bg-paper-white"
-          onClick={() => router.push("/app/learn")}
+          onClick={handleExitRequest}
           disabled={saving || checking}
         >
           Exit

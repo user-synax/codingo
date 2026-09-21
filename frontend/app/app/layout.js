@@ -22,10 +22,10 @@ export default async function AppLayout({ children }) {
       <Sidebar user={user} />
       {/* Desktop offset for fixed sidebar */}
       <div className="flex min-h-screen flex-col md:pl-[280px]">
-        {/* Mobile top bar — logo + hearts/CC/streak pills (icon-only) */}
+        {/* Mobile top bar — logo + streak/XP/level pills (icon-only) */}
         <header className="sticky top-0 z-30 flex h-[56px] items-center justify-between border-b-2 border-faded-gray bg-paper-white px-3 sm:px-4 md:hidden">
           <BrandLogo href="/app" size={28} wordmarkSize="text-[20px]" />
-          <TopbarStats streakCount={user.streak?.count ?? 0} xp={user.xp ?? 0} level={user.level ?? 1} hearts={user.hearts ?? 3} cc={user.cc ?? 50} />
+          <TopbarStats streakCount={user.streak?.count ?? 0} xp={user.xp ?? 0} level={user.level ?? 1} />
         </header>
         <main className="flex-1 px-4 py-6 pb-[88px] sm:px-6 lg:px-8 md:pb-8">{children}</main>
       </div>

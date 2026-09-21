@@ -206,20 +206,3 @@ export async function fetchLeaderboard({ limit = 25, offset = 0, page } = {}) {
   const qs = q.toString();
   return apiFetch(`/api/leaderboard${qs ? `?${qs}` : ""}`, { method: "GET" });
 }
-
-/* Economy — daily goal, hearts, CC, freezes */
-export async function fetchEconomy() {
-  return apiFetch("/api/economy/me", { method: "GET" });
-}
-export async function updateDailyGoal(dailyGoalXp) {
-  return apiFetch("/api/economy/daily-goal", { method: "PATCH", body: { dailyGoalXp } });
-}
-export async function consumeHeart() {
-  return apiFetch("/api/economy/hearts/consume", { method: "POST" });
-}
-export async function refillHearts(type = "single") {
-  return apiFetch("/api/economy/hearts/refill", { method: "POST", body: { type } });
-}
-export async function buyFreeze() {
-  return apiFetch("/api/economy/freeze/buy", { method: "POST" });
-}

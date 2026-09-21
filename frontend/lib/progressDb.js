@@ -6,10 +6,11 @@
    All ops are no-ops on the server or when IndexedDB is unavailable. */
 
 const DB_NAME = "codingo_progress";
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 const STORE_PROGRESS = "progress";
 const STORE_META = "meta";
 const STORE_PENDING = "pending";
+const STORE_DRAFTS = "lesson_drafts";
 
 let dbPromise = null;
 
@@ -41,10 +42,23 @@ function openDB() {
         p.createIndex("lessonId", "lessonId", { unique: false });
         p.createIndex("createdAt", "createdAt", { unique: false });
       }
+      if (!db.objectStoreNames.contains(STORE_DRAFTS)) {
+        const d = db.createObjectStore(STORE_DRAFTS, { keyPath: "key" });
+        d.createIndex("userId", "userId", { unique: false });
+        d.createIndex("lessonId", "lessonId", { unique: false });
+        d.createIndex("updatedAt", "updatedAt", { unique: false });
+      }
 
       // Migration: v1 -> v2 ensure indexes exist (no-op if already)
       if (oldVersion < 2) {
         // stores already created above; nothing else
+      }
+      // v2 -> v3 adds lesson_drafts for resume-from-where-you-left
+      if (oldVersion < 3 && !db.objectStoreNames.contains(STORE_DRAFTS)) {
+        const d = db.createObjectStore(STORE_DRAFTS, { keyPath: "key" });
+        d.createIndex("userId", "userId", { unique: false });
+        d.createIndex("lessonId", "lessonId", { unique: false });
+        d.createIndex("updatedAt", "updatedAt", { unique: false });
       }
     };
     req.onsuccess = () => resolve(req.result);
@@ -447,6 +461,114 @@ export async function deleteDatabase() {
   });
 }
 
+/* ---------- Lesson drafts (resume-from-where-you-left) ---------- */
+function makeDraftKey(userId, lessonId) {
+  return `${String(userId ?? "anon")}:${String(lessonId)}`;
+}
+
+export async function getLessonDraft(lessonId, userId) {
+  if (!isSupported()) return null;
+  const key = makeDraftKey(userId, lessonId);
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_DRAFTS, "readonly");
+    const store = tx.objectStore(STORE_DRAFTS);
+    const req = store.get(key);
+    req.onsuccess = () => {
+      if (req.result) return resolve(req.result);
+      // legacy: try plain lessonId
+      const req2 = store.get(String(lessonId));
+      req2.onsuccess = () => resolve(req2.result ?? null);
+      req2.onerror = () => resolve(null);
+    };
+    req.onerror = () => reject(req.error);
+  });
+}
+
+export async function putLessonDraft({ lessonId, userId, idx, answers, checked, firstTryCorrect, total, lessonTitle }) {
+  if (!isSupported() || !lessonId) return;
+  const key = makeDraftKey(userId, lessonId);
+  const doc = {
+    key,
+    userId: String(userId ?? "anon"),
+    lessonId: String(lessonId),
+    idx: typeof idx === "number" ? idx : 0,
+    answers: answers ?? {},
+    checked: checked ?? {},
+    firstTryCorrect: firstTryCorrect ?? {},
+    total: typeof total === "number" ? total : 0,
+    lessonTitle: lessonTitle ?? "",
+    updatedAt: Date.now(),
+    createdAt: Date.now(),
+  };
+  const db = await openDB();
+  // fetch existing to preserve createdAt
+  const existing = await getLessonDraft(lessonId, userId).catch(() => null);
+  if (existing?.createdAt) doc.createdAt = existing.createdAt;
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_DRAFTS, "readwrite");
+    const req = tx.objectStore(STORE_DRAFTS).put(doc);
+    req.onsuccess = () => resolve(doc);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+export async function removeLessonDraft(lessonId, userId) {
+  if (!isSupported()) return;
+  const key = makeDraftKey(userId, lessonId);
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_DRAFTS, "readwrite");
+    const store = tx.objectStore(STORE_DRAFTS);
+    const req = store.delete(key);
+    req.onsuccess = () => {
+      const req2 = store.delete(String(lessonId));
+      req2.onsuccess = () => resolve();
+      req2.onerror = () => resolve();
+    };
+    req.onerror = () => reject(req.error);
+  });
+}
+
+export async function getAllDrafts(userId) {
+  if (!isSupported()) return [];
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_DRAFTS, "readonly");
+    const req = tx.objectStore(STORE_DRAFTS).getAll();
+    req.onsuccess = () => {
+      const all = req.result ?? [];
+      if (userId) {
+        const uid = String(userId);
+        resolve(all.filter((d) => String(d.userId) === uid));
+      } else resolve(all);
+    };
+    req.onerror = () => reject(req.error);
+  });
+}
+
+export async function clearAllDrafts(userId) {
+  if (!isSupported()) return;
+  if (!userId) {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_DRAFTS, "readwrite");
+      tx.objectStore(STORE_DRAFTS).clear();
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+  const all = await getAllDrafts(userId);
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_DRAFTS, "readwrite");
+    const store = tx.objectStore(STORE_DRAFTS);
+    for (const d of all) store.delete(d.key);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
 // For testing / debugging
 export const _internal = {
   DB_NAME,
@@ -454,6 +576,8 @@ export const _internal = {
   STORE_PROGRESS,
   STORE_META,
   STORE_PENDING,
+  STORE_DRAFTS,
   makeKey,
   normalizeDoc,
+  makeDraftKey,
 };

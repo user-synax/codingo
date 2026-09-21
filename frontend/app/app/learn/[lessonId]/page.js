@@ -181,16 +181,6 @@ export default async function LessonPage({ params }) {
   return (
     <div className="mx-auto w-full max-w-[900px]">
       <div className="mb-4 flex items-center gap-3">
-        <Link
-          href="/app/learn"
-          className="inline-flex items-center gap-1 rounded-[12px] border-2 border-faded-gray bg-paper-white px-3 py-1.5 font-codingo-sans text-[13px] font-bold text-charcoal hover:border-charcoal"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-            <path d="M19 12H5" />
-            <path d="M12 19l-7-7 7-7" />
-          </svg>
-          Path
-        </Link>
         <span className="font-codingo-sans text-[13px] font-bold uppercase tracking-[0.04em] text-pencil-gray">
           {lesson.title} · {exercises.length} exercises
         </span>

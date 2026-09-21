@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { useMemo, useState, useEffect } from "react";
-import { Lock, Check, Play, Code2, Layers, GraduationCap, Rocket, ChevronDown, Sparkles, ArrowRight } from "lucide-react";
-import { LessonNode } from "@/components/learn/LessonNode";
+import { Check, Play, Code2, Layers, GraduationCap, Rocket, ChevronDown, Sparkles, ArrowRight } from "lucide-react";
+import { LessonCard } from "@/components/learn/LessonCard";
 import { useProgressStore } from "@/stores/progressStore";
 import { ProgressSyncBadge } from "@/components/progress/ProgressHydrator";
+import * as progressDb from "@/lib/progressDb";
 
 const UNIT_COLORS = [
   { bg: "bg-eager-green", border: "border-eager-green", text: "text-paper-white", accent: "bg-storybook-green" },
@@ -51,22 +52,68 @@ function courseStats(course, progressMap) {
   return { total: lessons.length, done, percent: lessons.length ? Math.round((done / lessons.length) * 100) : 0 };
 }
 
-/* Client shell — receives server initialProgressMap but live-updates from IndexedDB (IDB-first)
-   via useProgressStore. This gives instant paint from cache even while SSR data revalidates,
-   and keeps the snake path correct when offline. */
+/* Client shell — now with card grid per Unit (ladder removed).
+   Keeps IDB-first progress + draft resume (Continue cards). */
 export function LearnPathClient({ courses, initialProgressMap, activeCourseId }) {
   const byLessonId = useProgressStore((s) => s.byLessonId);
   const hydratedFromCache = useProgressStore((s) => s.hydratedFromCache);
   const pendingCount = useProgressStore((s) => s.pendingCount);
   const isOffline = useProgressStore((s) => s.isOffline);
+  const userId = useProgressStore((s) => s.userId);
   const [mounted, setMounted] = useState(false);
+  const [draftMap, setDraftMap] = useState({});
+
   useEffect(() => setMounted(true), []);
 
+  // Load lesson drafts (IndexedDB only) for Continue status
+  useEffect(() => {
+    if (!mounted || !progressDb.isSupported()) return;
+    let alive = true;
+    async function loadDrafts() {
+      try {
+        const uid = userId ?? undefined;
+        let drafts = await progressDb.getAllDrafts(uid).catch(() => []);
+        if (!drafts.length && uid && uid !== "anon") {
+          const anonDrafts = await progressDb.getAllDrafts("anon").catch(() => []);
+          if (anonDrafts.length) drafts = anonDrafts;
+        }
+        if (!uid) {
+          const any = await progressDb.getAllDrafts().catch(() => []);
+          if (any.length) drafts = any;
+        }
+        if (!alive) return;
+        const map = {};
+        for (const d of drafts) {
+          map[String(d.lessonId)] = d;
+        }
+        setDraftMap(map);
+      } catch {}
+    }
+    loadDrafts();
+    const id = setInterval(loadDrafts, 2000);
+    const onVis = () => {
+      if (document.visibilityState === "visible") loadDrafts();
+    };
+    const onStorage = () => loadDrafts();
+    window.addEventListener("visibilitychange", onVis);
+    window.addEventListener("focus", loadDrafts);
+    window.addEventListener("storage", onStorage);
+    // Also listen to custom event fired by LessonRunner on save
+    const onDraftUpdate = () => loadDrafts();
+    window.addEventListener("codingo:draft-update", onDraftUpdate);
+    return () => {
+      alive = false;
+      clearInterval(id);
+      window.removeEventListener("visibilitychange", onVis);
+      window.removeEventListener("focus", loadDrafts);
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("codingo:draft-update", onDraftUpdate);
+    };
+  }, [mounted, userId]);
+
   // IDB-first merge: store wins over server when hydrated, else server is truth.
-  // Guard with mounted so server and initial client render match (no hydration mismatch).
   const progressMap = useMemo(() => {
     if (!mounted || !hydratedFromCache || !byLessonId || Object.keys(byLessonId).length === 0) return initialProgressMap ?? {};
-    // Merge: server initial + live cache (live overwrites). This keeps offline progress visible.
     return { ...(initialProgressMap ?? {}), ...byLessonId };
   }, [initialProgressMap, byLessonId, hydratedFromCache, mounted]);
 
@@ -88,9 +135,6 @@ export function LearnPathClient({ courses, initialProgressMap, activeCourseId })
   const globalWithStatus = statusForLessons(allLessons, progressMap);
   const globalMap = new Map(globalWithStatus.map((x) => [String(x.lesson._id), x.status]));
 
-  const snakeOffsets = [0, 48, 28, -28, -48, 0];
-  const snakeOffsetsMobile = [0, 32, 18, -18, -32, 0];
-
   const completedCount = globalWithStatus.filter((x) => x.status === "completed").length;
   const totalCount = globalWithStatus.length;
   const percent = totalCount ? Math.round((completedCount / totalCount) * 100) : 0;
@@ -103,7 +147,6 @@ export function LearnPathClient({ courses, initialProgressMap, activeCourseId })
 
   return (
     <div className="mx-auto flex w-full max-w-[1100px] flex-col items-center">
-      {/* Sync status (only when offline or pending) — mounted gate avoids hydration mismatch */}
       {mounted && (isOffline || pendingCount > 0) ? (
         <div className="mb-4 flex w-full justify-end">
           <ProgressSyncBadge />
@@ -176,7 +219,7 @@ export function LearnPathClient({ courses, initialProgressMap, activeCourseId })
         </div>
         <div className="flex items-center justify-between gap-3 border-t-2 border-faded-gray/40 bg-storybook-green/30 px-5 py-2.5 sm:px-6">
           <p className="font-codingo-sans text-[12px] font-bold uppercase leading-none tracking-[0.053em] text-pencil-gray">Your path</p>
-          <p className="truncate font-codingo-sans text-[12px] font-medium text-pencil-gray">Tap a node below to start · {completedCount} of {totalCount} done</p>
+          <p className="truncate font-codingo-sans text-[12px] font-medium text-pencil-gray">Cards • {completedCount} of {totalCount} done</p>
         </div>
       </header>
 
@@ -212,10 +255,10 @@ export function LearnPathClient({ courses, initialProgressMap, activeCourseId })
                 }
               >
                 <div className="relative shrink-0">
-                  <div className={`flex h-14 w-14 items-center justify-center rounded-[16px] border-2 border-charcoal sm:h-16 sm:w-16 sm:rounded-[20px] ${m.tile} shadow-[0_3px_0_var(--color-charcoal)]`}>
-                    <TileIcon className={`h-[22px] w-[22px] sm:h-[26px] sm:w-[26px] ${m.tileIcon}`} strokeWidth={2.2} aria-hidden="true" />
+                  <div className={`flex h-14 w-14 items-center justify-center rounded-[16px] border-2 border-charcoal sm:h-20 sm:w-20 sm:rounded-[20px] lg:h-[84px] lg:w-[84px] lg:rounded-[22px] ${m.tile} shadow-[0_3px_0_var(--color-charcoal)] sm:shadow-[0_4px_0_var(--color-charcoal)]`}>
+                    <TileIcon className={`h-[22px] w-[22px] sm:h-8 sm:w-8 lg:h-9 lg:w-9 ${m.tileIcon}`} strokeWidth={2.2} aria-hidden="true" />
                   </div>
-                  <span className="absolute -bottom-1.5 -right-1.5 rounded-full border-2 border-charcoal bg-paper-white px-1.5 py-0.5 font-codingo-sans text-[10px] font-black leading-none text-charcoal sm:-bottom-2 sm:-right-2 sm:px-2 sm:text-[11px]">{m.mark}</span>
+                  <span className="absolute -bottom-1.5 -right-1.5 rounded-full border-2 border-charcoal bg-paper-white px-1.5 py-0.5 font-codingo-sans text-[10px] font-black leading-none text-charcoal sm:-bottom-2 sm:-right-2 sm:px-2 sm:text-[11px] lg:-bottom-2.5 lg:-right-2.5 lg:px-2.5 lg:py-1 lg:text-[12px]">{m.mark}</span>
                   {active ? (
                     <span className="absolute -left-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-full border-2 border-paper-white bg-eager-green text-paper-white sm:-left-2 sm:-top-2 sm:h-7 sm:w-7" aria-label="Currently viewing">
                       <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4" strokeWidth={3} aria-hidden="true" />
@@ -252,12 +295,14 @@ export function LearnPathClient({ courses, initialProgressMap, activeCourseId })
         </div>
       </section>
 
+      {/* Units — card grids (ladder removed) */}
       {activeCourse.units?.map((unit, unitIdx) => {
         const unitLessons = unit.lessons ?? [];
         const withStatus = unitLessons.map((l) => ({ lesson: l, status: globalMap.get(String(l._id)) ?? "locked" }));
         const completedInUnit = withStatus.filter((x) => x.status === "completed").length;
         const colors = UNIT_COLORS[unitIdx % UNIT_COLORS.length];
         const UnitIcon = UNIT_ICONS[unitIdx % UNIT_ICONS.length];
+        const globalStartIndex = allLessons.findIndex((l) => String(l._id) === String(withStatus[0]?.lesson._id));
         return (
           <section key={String(unit._id)} className="mt-8 w-full md:mt-6">
             <div className={`sticky top-[72px] z-20 -mx-4 border-y-2 ${colors.border} ${colors.bg} px-4 py-3 shadow-[0_4px_12px_rgba(0,0,0,0.08)] md:mx-0 md:top-4 md:rounded-[16px] md:border-2 md:p-4`}>
@@ -280,22 +325,25 @@ export function LearnPathClient({ courses, initialProgressMap, activeCourseId })
               </div>
             </div>
 
-            <div className="relative mt-6 flex w-full justify-center overflow-visible py-2 md:mt-4">
-              <div className="pointer-events-none absolute bottom-[40px] left-1/2 top-[40px] z-0 w-[14px] -translate-x-1/2 rounded-full bg-faded-gray/15 md:bottom-[48px] md:top-[48px]" aria-hidden="true" />
-              <div className="flex w-full flex-col items-center gap-7 md:hidden">
-                {withStatus.map(({ lesson, status }, i) => (
-                  <div key={String(lesson._id)} style={{ transform: `translateX(${snakeOffsetsMobile[i % snakeOffsetsMobile.length]}px)` }}>
-                    <LessonNode lesson={lesson} status={status} href={`/app/learn/${String(lesson._id)}`} />
-                  </div>
-                ))}
-              </div>
-              <div className="hidden w-full max-w-[980px] flex-col items-center gap-5 md:flex">
-                {withStatus.map(({ lesson, status }, i) => (
-                  <div key={String(lesson._id)} style={{ transform: `translateX(${snakeOffsets[i % snakeOffsets.length]}px)` }}>
-                    <LessonNode lesson={lesson} status={status} href={`/app/learn/${String(lesson._id)}`} />
-                  </div>
-                ))}
-              </div>
+            {/* Perfect grid: 1 col mobile, 2 tablet, 3 desktop — every card previewed */}
+            <div className="mt-4 grid w-full grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 lg:gap-4">
+              {withStatus.map(({ lesson, status }, i) => {
+                const globalIdx = globalStartIndex >= 0 ? globalStartIndex + i : i;
+                const draft = mounted ? draftMap[String(lesson._id)] : null;
+                // Don't show draft as Continue if already completed
+                const effectiveDraft = status === "completed" ? null : draft;
+                return (
+                  <LessonCard
+                    key={String(lesson._id)}
+                    lesson={lesson}
+                    status={status}
+                    draft={effectiveDraft}
+                    index={globalIdx}
+                    totalInUnit={unitLessons.length}
+                    unitTitle={unit.title}
+                  />
+                );
+              })}
             </div>
           </section>
         );
