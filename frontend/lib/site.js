@@ -18,4 +18,4 @@ export const SITE_NAME = "Codingo";
 export const SITE_TAGLINE = "Learn to code. Free. Fun. Together.";
 export const SITE_DESCRIPTION =
   "Codingo is a free, Duolingo-style web app for learning programming — bite-sized lessons, real code in your browser, XP, streaks, and a community that helps you get unstuck.";
-export const OG_IMAGE = "/android-chrome-512x512.png";
+export const OG_IMAGE = "/og-image.png";

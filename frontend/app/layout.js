@@ -78,14 +78,14 @@ export const metadata = {
     images: [
       {
         url: OG_IMAGE,
-        width: 512,
-        height: 512,
-        alt: `${SITE_NAME} logo — learn to code free, fun, together`,
+        width: 1200,
+        height: 630,
+        alt: `${SITE_NAME} — ${SITE_TAGLINE}`,
       },
     ],
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: `${SITE_NAME} — ${SITE_TAGLINE}`,
     description: SITE_DESCRIPTION,
     images: [OG_IMAGE],
