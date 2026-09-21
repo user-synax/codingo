@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { BrandMark } from "@/components/BrandLogo";
 import {
   Sheet,
   SheetTrigger,
@@ -43,7 +44,12 @@ export function MobileMenu({ links }) {
       </SheetTrigger>
       <SheetContent side="right" aria-describedby={undefined}>
         <div className="flex flex-col gap-6 px-6 py-6">
-          <SheetTitle>Codingo</SheetTitle>
+          <SheetTitle>
+            <span className="inline-flex items-center gap-2">
+              <BrandMark size={24} />
+              Codingo
+            </span>
+          </SheetTitle>
           <nav aria-label="Mobile" className="flex flex-col gap-5">
             {links.map((link) => (
               <SheetClose key={link.label} asChild>

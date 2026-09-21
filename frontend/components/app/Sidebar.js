@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { API_BASE } from "@/lib/api";
+import { BrandLogo } from "@/components/BrandLogo";
 import { getXpProgress } from "@/lib/level";
 import { SidebarStats } from "@/components/app/UserStats";
 import { UserAvatar } from "@/components/app/UserAvatar";
@@ -77,14 +78,8 @@ export function Sidebar({ user }) {
 
   return (
     <aside className="fixed inset-y-0 left-0 z-40 hidden w-[280px] flex-col border-r-2 border-faded-gray bg-paper-white md:flex">
-      <div className="flex h-[64px] shrink-0 items-center gap-3 border-b-2 border-faded-gray px-6">
-        <div className="flex h-9 w-9 items-center justify-center rounded-[12px] bg-eager-green text-paper-white">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
-            <polyline points="16 18 22 12 16 6" />
-            <polyline points="8 6 2 12 8 18" />
-          </svg>
-        </div>
-        <span className="font-feather text-[22px] font-black tracking-[-0.02em] text-eager-green">Codingo</span>
+      <div className="flex h-[64px] shrink-0 items-center border-b-2 border-faded-gray px-6">
+        <BrandLogo href="/app" size={36} wordmarkSize="text-[22px]" />
       </div>
       <div className="border-b-2 border-faded-gray px-4 py-4">
         <SidebarStats streakCount={user?.streak?.count ?? 0} xp={user?.xp ?? 0} level={xpInfo.level} xpInfo={xpInfo} />

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { BrandLogo } from "@/components/BrandLogo";
 import { MobileMenu } from "@/components/landing/MobileMenu";
 
 /* Sticky landing navbar (server component). Interactive bits live
@@ -14,13 +15,7 @@ export function Navbar() {
   return (
     <header className="sticky top-0 z-40 border-b border-faded-gray bg-paper-white">
       <div className="mx-auto flex h-[64px] w-full max-w-[1200px] items-center justify-between px-4 sm:px-6">
-        <Link
-          href="/"
-          aria-label="Codingo home"
-          className="font-feather text-[28px] leading-none font-black tracking-[-0.02em] text-eager-green"
-        >
-          Codingo
-        </Link>
+        <BrandLogo size={32} wordmarkSize="text-[28px]" priority />
 
         {/* Desktop */}
         <nav aria-label="Primary" className="hidden items-center gap-7 md:flex">

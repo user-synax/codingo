@@ -23,6 +23,45 @@ export const metadata = {
   title: "Codingo - Learn programming in fun way",
   description:
     "A free web app for learning programming through short, gamified lessons with the look and feel of Duolingo.",
+  manifest: "/site.webmanifest",
+  icons: {
+    icon: [
+      { url: "/favicon.ico" },
+      {
+        url: "/android-chrome-192x192.png",
+        sizes: "192x192",
+        type: "image/png",
+      },
+      {
+        url: "/android-chrome-512x512.png",
+        sizes: "512x512",
+        type: "image/png",
+      },
+    ],
+    apple: [
+      {
+        url: "/apple-touch-icon.png",
+        sizes: "180x180",
+        type: "image/png",
+      },
+    ],
+  },
+  openGraph: {
+    title: "Codingo - Learn programming in fun way",
+    description:
+      "A free web app for learning programming through short, gamified lessons with the look and feel of Duolingo.",
+    type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: "Codingo - Learn programming in fun way",
+    description:
+      "A free web app for learning programming through short, gamified lessons with the look and feel of Duolingo.",
+  },
+};
+
+export const viewport = {
+  themeColor: "#58cc02",
 };
 
 export default function RootLayout({ children }) {

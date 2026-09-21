@@ -1,4 +1,8 @@
 <p align="center">
+  <img src="frontend/public/apple-touch-icon.png" alt="Codingo logo" width="120" />
+</p>
+
+<p align="center">
   <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=28&duration=3000&pause=1000&color=58CC02&center=true&vCenter=true&width=600&lines=Learn+to+code.+Free.+Fun.+Together.;Bite-sized+lessons.+Real+code.+No+paywalls.;Gamified+learning+for+the+next+generation.;A+free+Duolingo-style+coding+app." alt="Codingo Typing SVG" />
 </p>
 
@@ -113,6 +117,7 @@ codingo/
 │   │   └── utils.js                 # cn() — clsx + tailwind-merge
 │   ├── components/landing/Footer.js # Ayush @user-synax
 │   ├── globals.css                  # Tailwind @theme + motion tokens
+│   ├── public/                      # App logo (apple-touch-icon, android-chrome 192/512, favicon, site.webmanifest)
 │   └── next.config.mjs
 │
 ├── backend/                         # Express API server

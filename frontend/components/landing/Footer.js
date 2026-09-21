@@ -5,6 +5,7 @@
 
 import Link from "next/link";
 import { Heart } from "lucide-react";
+import { BrandMark } from "@/components/BrandLogo";
 
 const LINK_COLUMNS = [
   {
@@ -54,9 +55,14 @@ export function Footer() {
           <Link
             href="/"
             aria-label="Codingo home"
-            className="font-feather text-[32px] leading-none font-black tracking-[-0.02em] text-paper-white"
+            className="inline-flex items-center gap-3"
           >
-            Codingo
+            <span className="flex h-11 w-11 items-center justify-center rounded-[12px] bg-paper-white p-1">
+              <BrandMark size={32} />
+            </span>
+            <span className="font-feather text-[32px] leading-none font-black tracking-[-0.02em] text-paper-white">
+              Codingo
+            </span>
           </Link>
           <p className="mt-2 max-w-[320px] font-codingo-sans text-[15px] leading-[1.4] font-medium text-paper-white/80">
             Learn programming for free — bite-sized lessons, real code, and a
@@ -96,8 +102,12 @@ export function Footer() {
           <div className="flex flex-col items-center gap-3 sm:items-start">
             <Link
               href="/"
+              aria-label="Codingo home"
               className="inline-flex items-center gap-2 font-feather text-[20px] leading-none font-black tracking-[-0.02em] text-paper-white"
             >
+              <span className="flex h-7 w-7 items-center justify-center rounded-[8px] bg-paper-white p-0.5">
+                <BrandMark size={20} />
+              </span>
               Learn Fast with Community
             </Link>
             <p className="font-codingo-sans text-[13px] leading-[1.23] text-paper-white/50">
