@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { API_BASE } from "@/lib/api";
-import { Lock, Check, Play, Code2, Layers, GraduationCap, Rocket, ChevronDown } from "lucide-react";
+import { Lock, Check, Play, Code2, Layers, GraduationCap, Rocket, ChevronDown, Sparkles, ArrowRight } from "lucide-react";
 import { LessonNode } from "@/components/learn/LessonNode";
 
 async function getCoursesWithProgress() {
@@ -28,7 +28,44 @@ const UNIT_COLORS = [
 
 const UNIT_ICONS = [Code2, Layers, GraduationCap, Layers, Rocket];
 
-export default async function LearnPage() {
+/* Per-path branding for the course header badge + picker cards.
+   Falls back to charcoal + graduation cap for future courses. */
+const COURSE_META = {
+  javascript: { mark: "JS", chip: "javascript", badge: "bg-charcoal", markColor: "text-[#f7df1e]", Icon: Code2, tile: "bg-[#f7df1e]", tileIcon: "text-charcoal" },
+  ai: { mark: "AI", chip: "AI coding", badge: "bg-spark-blue", markColor: "text-paper-white", Icon: Sparkles, tile: "bg-spark-blue", tileIcon: "text-paper-white" },
+};
+
+function courseMeta(course) {
+  const m = COURSE_META[course?.language];
+  if (m) return m;
+  const mark = String(course?.title ?? "??").replace(/[^a-zA-Z]/g, "").slice(0, 2).toUpperCase() || "??";
+  return { mark, chip: course?.language ?? "course", badge: "bg-charcoal", markColor: "text-paper-white", Icon: GraduationCap, tile: "bg-charcoal", tileIcon: "text-paper-white" };
+}
+
+/* State pill colors for the picker cards */
+const STATE_PILL = {
+  Completed: "bg-charcoal text-paper-white",
+  "Start here": "bg-eager-green text-paper-white",
+  "In progress": "bg-[#ff9600] text-paper-white",
+  "Next up": "bg-spark-blue text-paper-white",
+};
+
+function statusForLessons(allLessons, progressMap) {
+  return allLessons.map((l, i) => {
+    const prog = progressMap[String(l._id)];
+    if (prog?.status === "completed") return { lesson: l, status: "completed" };
+    const prevCompleted = allLessons.slice(0, i).every((prev) => progressMap[String(prev._id)]?.status === "completed");
+    return { lesson: l, status: prevCompleted ? "available" : "locked" };
+  });
+}
+
+function courseStats(course, progressMap) {
+  const lessons = (course.units ?? []).flatMap((u) => u.lessons ?? []);
+  const done = lessons.filter((l) => progressMap[String(l._id)]?.status === "completed").length;
+  return { total: lessons.length, done, percent: lessons.length ? Math.round((done / lessons.length) * 100) : 0 };
+}
+
+export default async function LearnPage({ searchParams }) {
   const { courses, progressMap } = await getCoursesWithProgress();
 
   if (!courses.length) {
@@ -42,15 +79,14 @@ export default async function LearnPage() {
     );
   }
 
-  const course = courses[0];
+  // Course switcher — ?course=<id>, defaults to the first path.
+  // Every path runs newbie-to-expert from its own lesson 1.
+  const sp = searchParams ? await searchParams : {};
+  const course = courses.find((c) => String(c._id) === String(sp?.course ?? "")) ?? courses[0];
+  const meta = courseMeta(course);
   const allLessons = course.units?.flatMap((u) => u.lessons ?? []) ?? [];
 
-  const globalWithStatus = allLessons.map((l, i) => {
-    const prog = progressMap[String(l._id)];
-    if (prog?.status === "completed") return { lesson: l, status: "completed" };
-    const prevCompleted = allLessons.slice(0, i).every((prev) => progressMap[String(prev._id)]?.status === "completed");
-    return { lesson: l, status: prevCompleted ? "available" : "locked" };
-  });
+  const globalWithStatus = statusForLessons(allLessons, progressMap);
   const globalMap = new Map(globalWithStatus.map((x) => [String(x.lesson._id), x.status]));
 
   const snakeOffsets = [0, 48, 28, -28, -48, 0];
@@ -66,8 +102,7 @@ export default async function LearnPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-[1100px] flex-col items-center">
-      {/* Course header — banner card. Course switcher slots in at the
-          top-right (disabled "Soon" for now, becomes dropdown/modal). */}
+      {/* Course header — banner card. The switcher jumps to the picker below. */}
       <header className="w-full overflow-hidden rounded-[16px] border-2 border-faded-gray bg-paper-white md:rounded-[20px]">
         <div className="relative p-5 sm:p-6 md:p-7">
           <div className="pointer-events-none absolute -right-14 -top-14 h-44 w-44 rounded-full bg-storybook-green/70" aria-hidden="true" />
@@ -77,21 +112,19 @@ export default async function LearnPage() {
           <div className="relative flex flex-col gap-5 md:flex-row md:items-center md:gap-6">
             {/* Course badge */}
             <div className="flex items-start justify-between gap-3 md:block">
-              <div className="flex h-[64px] w-[64px] shrink-0 items-center justify-center rounded-[16px] border-2 border-charcoal bg-charcoal sm:h-[72px] sm:w-[72px]">
-                <span className="font-codingo-sans text-[24px] font-black leading-none text-[#f7df1e] sm:text-[26px]">
-                  JS
+              <div className={`flex h-[64px] w-[64px] shrink-0 items-center justify-center rounded-[16px] border-2 border-charcoal sm:h-[72px] sm:w-[72px] ${meta.badge}`}>
+                <span className={`font-codingo-sans text-[24px] font-black leading-none sm:text-[26px] ${meta.markColor}`}>
+                  {meta.mark}
                 </span>
               </div>
-              {/* Mobile switcher placeholder */}
-              <span
-                title="More courses soon"
-                aria-disabled="true"
-                className="inline-flex cursor-not-allowed items-center gap-1 rounded-full border-2 border-faded-gray bg-paper-white px-3 py-1.5 font-codingo-sans text-[12px] font-bold leading-none text-pencil-gray opacity-70 md:hidden"
+              {/* Mobile switcher — jumps to the path picker below */}
+              <Link
+                href="#courses"
+                className="inline-flex items-center gap-1 rounded-full border-2 border-faded-gray bg-paper-white px-3 py-1.5 font-codingo-sans text-[12px] font-bold leading-none text-charcoal transition-colors hover:border-charcoal md:hidden"
               >
                 Switch
                 <ChevronDown className="h-3.5 w-3.5" strokeWidth={2.5} aria-hidden="true" />
-                <span className="rounded-full bg-storybook-green px-1.5 py-0.5 text-[10px] font-black uppercase tracking-[0.04em] text-charcoal">Soon</span>
-              </span>
+              </Link>
             </div>
 
             {/* Title + meta */}
@@ -99,7 +132,7 @@ export default async function LearnPage() {
               <div className="flex flex-wrap items-center gap-2">
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-charcoal px-3 py-1 font-codingo-sans text-[11px] font-black uppercase leading-none tracking-[0.06em] text-paper-white">
                   <span className="h-1.5 w-1.5 rounded-full bg-[#f7df1e]" aria-hidden="true" />
-                  {course.language}
+                  {meta.chip}
                 </span>
                 <span className="inline-flex items-center rounded-full border-2 border-faded-gray/40 bg-paper-white px-3 py-1 font-codingo-sans text-[11px] font-bold leading-none text-pencil-gray">
                   {unitsCount} units · {totalCount} lessons
@@ -141,16 +174,15 @@ export default async function LearnPage() {
                 <Play className="h-4 w-4 fill-paper-white" strokeWidth={2.5} aria-hidden="true" />
                 {ctaLabel}
               </Link>
-              <span
-                title="More courses soon — switcher becomes a dropdown/modal here"
-                aria-disabled="true"
-                className="codingo-btn-outline hidden cursor-not-allowed items-center justify-center gap-1.5 rounded-[12px] border-2 border-faded-gray bg-paper-white px-5 py-3 font-codingo-sans text-[13px] font-bold leading-none text-pencil-gray opacity-70 md:inline-flex"
+              <Link
+                href="#courses"
+                className="codingo-btn-outline hidden items-center justify-center gap-1.5 rounded-[12px] border-2 border-faded-gray bg-paper-white px-5 py-3 font-codingo-sans text-[13px] font-bold leading-none text-charcoal transition-colors hover:border-charcoal md:inline-flex"
               >
-                Switch course
+                Switch path
                 <ChevronDown className="h-4 w-4" strokeWidth={2.5} aria-hidden="true" />
-              </span>
+              </Link>
               <p className="hidden text-center font-codingo-sans text-[11px] font-medium leading-[1.3] text-pencil-gray md:block">
-                More courses soon
+                {courses.length} paths · all open
               </p>
             </div>
           </div>
@@ -162,6 +194,98 @@ export default async function LearnPage() {
           </p>
         </div>
       </header>
+
+      {/* Path picker — every path open from day one, suggested order badged.
+           ?course=<id> swaps the path above; each path starts at its own lesson 1. */}
+      <section id="courses" aria-label="Learning paths" className="mt-8 w-full scroll-mt-24">
+        <div className="flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <p className="inline-flex items-center gap-1.5 rounded-full bg-storybook-green px-3 py-1 font-codingo-sans text-[11px] font-black uppercase leading-none tracking-[0.06em] text-charcoal">
+              <Sparkles className="h-3.5 w-3.5 text-eager-green" strokeWidth={2.5} aria-hidden="true" />
+              Learning paths
+            </p>
+            <h2 className="mt-2 font-feather text-[26px] font-black leading-[1.1] tracking-[-0.01em] text-charcoal sm:text-[30px]">
+              Pick your path
+            </h2>
+            <p className="mt-1 font-codingo-sans text-[14px] font-medium leading-[1.4] text-pencil-gray">
+              Every path runs newbie to expert. All open — start anywhere.
+            </p>
+          </div>
+          <p className="rounded-full border-2 border-faded-gray bg-paper-white px-3 py-1 font-codingo-sans text-[12px] font-bold leading-none text-pencil-gray">
+            {courses.length} paths · all open
+          </p>
+        </div>
+        <div className="mt-4 grid w-full grid-cols-1 gap-4 md:grid-cols-2">
+          {courses.map((c, i) => {
+            const m = courseMeta(c);
+            const st = courseStats(c, progressMap);
+            const active = String(c._id) === String(course._id);
+            const units = c.units?.length ?? 0;
+            const state = st.percent === 100 ? "Completed" : i === 0 ? "Start here" : st.done > 0 ? "In progress" : "Next up";
+            const TileIcon = m.Icon;
+            return (
+              <Link
+                key={String(c._id)}
+                href={`/app/learn?course=${String(c._id)}`}
+                aria-current={active ? "true" : undefined}
+                className={
+                  active
+                    ? "group flex items-center gap-4 rounded-[20px] border-2 border-eager-green bg-storybook-green/40 p-4 transition-colors sm:gap-5 sm:p-5"
+                    : "group flex items-center gap-4 rounded-[20px] border-2 border-faded-gray bg-paper-white p-4 transition-colors hover:border-charcoal sm:gap-5 sm:p-5"
+                }
+              >
+                {/* Big sticker tile — the path icon, now impossible to miss */}
+                <div className="relative shrink-0">
+                  <div className={`flex h-20 w-20 items-center justify-center rounded-[20px] border-2 border-charcoal sm:h-24 sm:w-24 ${m.tile} shadow-[0_4px_0_var(--color-charcoal)]`}>
+                    <TileIcon className={`h-10 w-10 sm:h-12 sm:w-12 ${m.tileIcon}`} strokeWidth={2.2} aria-hidden="true" />
+                  </div>
+                  <span className="absolute -bottom-2 -right-2 rounded-full border-2 border-charcoal bg-paper-white px-2 py-0.5 font-codingo-sans text-[11px] font-black leading-none text-charcoal">
+                    {m.mark}
+                  </span>
+                  {active ? (
+                    <span className="absolute -left-2 -top-2 flex h-7 w-7 items-center justify-center rounded-full border-2 border-paper-white bg-eager-green text-paper-white" aria-label="Currently viewing">
+                      <Check className="h-4 w-4" strokeWidth={3} aria-hidden="true" />
+                    </span>
+                  ) : null}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="font-codingo-sans text-[18px] font-black leading-[1.2] text-charcoal sm:text-[19px]">{c.title}</p>
+                    <span className={`rounded-full px-2.5 py-1 font-codingo-sans text-[10px] font-black uppercase leading-none tracking-[0.05em] ${STATE_PILL[state]}`}>
+                      {state}
+                    </span>
+                  </div>
+                  <p className="mt-1 line-clamp-2 font-codingo-sans text-[13px] font-medium leading-[1.45] text-pencil-gray">{c.description}</p>
+                  <p className="mt-1.5 font-codingo-sans text-[12px] font-bold text-pencil-gray">
+                    {units} units · {st.total} lessons
+                  </p>
+                  <div className="mt-2 flex items-center gap-2">
+                    <div className="h-2.5 min-w-0 flex-1 overflow-hidden rounded-full bg-faded-gray/20">
+                      <div
+                        className={`h-full rounded-full ${st.percent === 100 ? "bg-charcoal" : "bg-eager-green"}`}
+                        style={{ width: `${st.percent}%` }}
+                      />
+                    </div>
+                    <span className="shrink-0 font-codingo-sans text-[12px] font-black text-charcoal">
+                      {st.done}/{st.total}
+                    </span>
+                  </div>
+                </div>
+                <span
+                  aria-hidden="true"
+                  className={
+                    active
+                      ? "hidden h-10 w-10 shrink-0 items-center justify-center rounded-full bg-eager-green text-paper-white sm:flex"
+                      : "hidden h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-faded-gray text-pencil-gray transition-colors group-hover:border-charcoal group-hover:text-charcoal sm:flex"
+                  }
+                >
+                  <ArrowRight className="h-5 w-5" strokeWidth={2.5} />
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+      </section>
 
       {course.units?.map((unit, unitIdx) => {
         const unitLessons = unit.lessons ?? [];

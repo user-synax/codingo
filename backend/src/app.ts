@@ -14,18 +14,26 @@ import aiRouter from "./routes/ai.js";
 export function createApp() {
   const app = express();
 
+  // Behind Render's reverse proxy: without this, every user shares the proxy
+  // IP, so the auth/AI rate limiters would throttle ALL users together.
+  // Render terminates TLS at its proxy and forwards one hop, so 1 is correct.
+  app.set("trust proxy", 1);
+
   app.use(helmet());
   app.use(cookieParser());
   app.use(express.json({ limit: "100kb" }));
   app.use(express.urlencoded({ extended: false }));
 
+  // Production (Vercel × Render) is cross-site with credentials, so the
+  // allowlist is strict there. Local dev stays permissive for ease.
   const allowedOrigins = [env.frontendUrl, "http://localhost:3000", "http://127.0.0.1:3000"];
   app.use(
     cors({
       origin(origin, cb) {
         if (!origin) return cb(null, true);
         if (allowedOrigins.includes(origin)) return cb(null, true);
-        return cb(null, true); // allow all for dev ease; tighten in prod if needed
+        if (!env.isProd) return cb(null, true); // allow all for dev ease only
+        return cb(new Error("CORS: origin not allowed."));
       },
       credentials: true,
     }),

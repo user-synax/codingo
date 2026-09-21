@@ -23,10 +23,14 @@ export const cookieName = COOKIE_NAME;
 export const cookieMaxAge = COOKIE_MAX_AGE_MS;
 
 export function cookieOptions() {
+  // Vercel frontend × Render backend are different sites: cross-site fetch
+  // never sends SameSite=Lax cookies, so production needs SameSite=None
+  // (which requires Secure — already true in prod, browsers accept it since
+  // Render serves HTTPS). Local dev keeps Lax so http://localhost keeps working.
   return {
     httpOnly: true as const,
     secure: env.isProd,
-    sameSite: "lax" as const,
+    sameSite: (env.isProd ? "none" : "lax") as "none" | "lax",
     maxAge: COOKIE_MAX_AGE_MS,
     path: "/" as const,
   };
@@ -36,7 +40,7 @@ export function clearCookieOptions() {
   return {
     httpOnly: true as const,
     secure: env.isProd,
-    sameSite: "lax" as const,
+    sameSite: (env.isProd ? "none" : "lax") as "none" | "lax",
     path: "/" as const,
   };
 }

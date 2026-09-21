@@ -6,7 +6,8 @@ export type ExerciseType =
   | "arrange"
   | "predict_output"
   | "fix_bug"
-  | "write_code";
+  | "write_code"
+  | "ai_prompt";
 
 export interface IExercise extends Document {
   _id: mongoose.Types.ObjectId;
@@ -29,7 +30,7 @@ const ExerciseSchema = new Schema<IExercise>(
     type: {
       type: String,
       required: true,
-      enum: ["multiple_choice", "fill_blank", "arrange", "predict_output", "fix_bug", "write_code"],
+      enum: ["multiple_choice", "fill_blank", "arrange", "predict_output", "fix_bug", "write_code", "ai_prompt"],
     },
     prompt: { type: String, required: true, trim: true },
     content: { type: Schema.Types.Mixed, required: true },

@@ -1,4 +1,4 @@
-/* Exercise Types section — showcases the six exercise types from PRD 5.2.
+/* Exercise Types section — showcases the seven exercise types (PRD 5.2 + AI prompt).
    Server component. Three-column grid of exercise type cards.
    Uses secondary palette only inside illustrations (design.md). */
 
@@ -62,6 +62,17 @@ export function ExerciseTypes() {
       ),
       title: "Write Code",
     },
+    {
+      icon: (
+        <svg width="40" height="40" viewBox="0 0 40 40" fill="none" role="img" aria-hidden="true">
+          <rect x="4" y="8" width="32" height="24" rx="6" fill="#bbe7fc" stroke="#1cb0f6" strokeWidth="2" />
+          <path d="M13 15h14M13 20h9M13 25h14" stroke="#1cb0f6" strokeWidth="2.5" strokeLinecap="round" />
+          <circle cx="28" cy="26" r="5" fill="#1cb0f6" />
+          <path d="M26 26l1.5 1.5L30 25" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      ),
+      title: "AI Prompt",
+    },
   ];
 
   return (
@@ -71,7 +82,8 @@ export function ExerciseTypes() {
           practice makes progress
         </h2>
         <p className="mt-3 max-w-[520px] font-codingo-sans text-body leading-body font-medium text-pencil-gray">
-          Six types of exercises keep things fresh — from multiple choice to writing real code.
+          Seven types of exercises keep things fresh — from multiple choice to writing real code,
+          plus AI-prompt challenges where a live AI answers you.
           Every exercise gives instant feedback so you always know where you stand.
         </p>
 

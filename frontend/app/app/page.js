@@ -33,24 +33,37 @@ export default async function AppHome() {
   const [user, { courses, progress }] = await Promise.all([getCurrentUser(), getDashboardData()]);
   const xpInfo = getXpProgress(user?.xp ?? 0);
 
-  const course = courses[0];
-  const units = course?.units ?? [];
-  const allLessons = units.flatMap((u) => (u.lessons ?? []).map((l) => ({ ...l, unitTitle: u.title })));
-  const lessonById = new Map(allLessons.map((l) => [String(l._id), l]));
+  // Multi-path dashboard — each path runs newbie-to-expert from its own lesson 1.
+  // "Continue" resumes the first path (in order) that still has an open lesson.
+  const lessonById = new Map();
+  const perCourse = (courses ?? []).map((course) => {
+    const units = course?.units ?? [];
+    const lessons = units.flatMap((u) => (u.lessons ?? []).map((l) => ({ ...l, unitTitle: u.title, courseTitle: course.title })));
+    for (const l of lessons) lessonById.set(String(l._id), l);
+    return { course, lessons };
+  });
   const completedIds = new Set(
     (progress ?? []).filter((p) => p.status === "completed").map((p) => String(p.lessonId)),
   );
 
-  const withStatus = allLessons.map((l, i) => {
-    if (completedIds.has(String(l._id))) return { lesson: l, status: "completed" };
-    const prevDone = allLessons.slice(0, i).every((prev) => completedIds.has(String(prev._id)));
-    return { lesson: l, status: prevDone ? "available" : "locked" };
-  });
-  const completedCount = withStatus.filter((x) => x.status === "completed").length;
-  const totalCount = withStatus.length;
+  const perCourseStatus = perCourse.map(({ course, lessons }) => ({
+    course,
+    withStatus: lessons.map((l, i) => {
+      if (completedIds.has(String(l._id))) return { lesson: l, status: "completed" };
+      const prevDone = lessons.slice(0, i).every((prev) => completedIds.has(String(prev._id)));
+      return { lesson: l, status: prevDone ? "available" : "locked" };
+    }),
+  }));
+  const completedCount = perCourseStatus.reduce((n, c) => n + c.withStatus.filter((x) => x.status === "completed").length, 0);
+  const totalCount = perCourseStatus.reduce((n, c) => n + c.withStatus.length, 0);
   const percent = totalCount ? Math.round((completedCount / totalCount) * 100) : 0;
-  const nextLesson = withStatus.find((x) => x.status === "available")?.lesson ?? null;
-  const nextIndex = nextLesson ? allLessons.findIndex((l) => String(l._id) === String(nextLesson._id)) : -1;
+  const nextEntry = perCourseStatus
+    .flatMap((c) => c.withStatus.map((x) => ({ ...x, courseTitle: c.course?.title })))
+    .find((x) => x.status === "available") ?? null;
+  const nextLesson = nextEntry?.lesson ?? null;
+  const nextIndex = nextLesson
+    ? (perCourseStatus.flatMap((c) => c.withStatus.map((x) => x.lesson)).findIndex((l) => String(l._id) === String(nextLesson._id)))
+    : -1;
 
   const recent = (progress ?? [])
     .filter((p) => p.status === "completed" && p.completedAt)
@@ -94,7 +107,7 @@ export default async function AppHome() {
     {
       label: "Lessons",
       value: `${completedCount}/${totalCount}`,
-      sub: `${percent}% of ${course?.title ?? "course"}`,
+      sub: `${percent}% across ${courses.length} path${courses.length === 1 ? "" : "s"}`,
       icon: BookOpenCheck,
       tile: "bg-[#f3e8ff] text-[#9333ea]",
     },
@@ -171,6 +184,11 @@ export default async function AppHome() {
               <p className="mt-2 inline-flex items-center rounded-full bg-[#e6f4ff] px-2.5 py-0.5 font-codingo-sans text-[11px] font-bold leading-[1.4] text-spark-blue">
                 {nextLesson.unitTitle}
               </p>
+              {nextEntry?.courseTitle ? (
+                <p className="mt-2 inline-flex items-center rounded-full bg-charcoal px-2.5 py-0.5 font-codingo-sans text-[11px] font-bold leading-[1.4] text-paper-white ml-2">
+                  {nextEntry.courseTitle}
+                </p>
+              ) : null}
               <h2 className="mt-2 font-codingo-sans text-[20px] font-bold leading-[1.2] text-charcoal sm:text-[22px]">
                 {nextIndex + 1}. {nextLesson.title}
               </h2>

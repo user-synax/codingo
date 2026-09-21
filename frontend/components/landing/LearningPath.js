@@ -49,8 +49,9 @@ export function LearningPath() {
             your path, your pace
           </h2>
           <p className="font-codingo-sans text-body leading-body font-medium text-pencil-gray">
-            Follow a visual skill path designed to keep you moving. Each lesson
-            builds on the last — lock in your progress and never lose your place.
+            Follow visual skill paths designed to keep you moving — from JS from Zero
+            to Code with AI. Each lesson builds on the last, every path runs
+            newbie-to-expert, and you never lose your place.
           </p>
           <div className="flex flex-col gap-3 sm:flex-row">
             <Button variant="primary" href="/signup">

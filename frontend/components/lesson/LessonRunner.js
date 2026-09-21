@@ -10,6 +10,7 @@ import { ArrangeBlocks } from "@/components/exercises/ArrangeBlocks";
 import { PredictOutput } from "@/components/exercises/PredictOutput";
 import { FixBug } from "@/components/exercises/FixBug";
 import { WriteCode } from "@/components/exercises/WriteCode";
+import { AiPrompt } from "@/components/exercises/AiPrompt";
 import { useProgressStore } from "@/stores/progressStore";
 import { runCode, compareOutput } from "@/lib/runner";
 import { playCorrect, playWrong, playComplete, isMuted, toggleMuted } from "@/lib/sound";
@@ -51,6 +52,18 @@ function HintPanel({ hints, exercise }) {
       ) : null}
     </div>
   );
+}
+
+/* ai_prompt readiness — prompt written, AI (or example) answered, checklist done.
+   Grading stays deterministic: checklist answers vs solution, never the AI text. */
+function aiPromptReady(v, ex) {
+  if (!v || typeof v !== "object") return false;
+  if (!(v.prompt ?? "").trim()) return false;
+  if (!v.asked && !v.usedExample) return false;
+  const n = ex?.content?.checklist?.length ?? 0;
+  const checks = Array.isArray(v.checks) ? v.checks : [];
+  if (checks.length !== n) return false;
+  return checks.every((c) => c === true || c === false);
 }
 
 export function LessonRunner({ lesson, exercises, nextLesson }) {
@@ -113,6 +126,7 @@ export function LessonRunner({ lesson, exercises, nextLesson }) {
       else if (ex.type === "arrange") { if (checked[ex._id] === true) c++; }
       else if (ex.type === "predict_output") { if (checked[ex._id] === true) c++; }
       else if (ex.type === "fix_bug" || ex.type === "write_code") { if (firstTryCorrect[ex._id] === true) c++; }
+      else if (ex.type === "ai_prompt") { if (checked[ex._id] === true) c++; }
     }
     return total ? Math.round((c / total) * 100) : 0;
   }, [answers, checked, firstTryCorrect, exercises, total]);
@@ -132,9 +146,11 @@ export function LessonRunner({ lesson, exercises, nextLesson }) {
     !isCodeType ||
     (answers[current._id] !== undefined && answers[current._id] !== starterFor(current));
   const needsAnswer =
-    answers[current?._id] === undefined ||
-    answers[current?._id] === "" ||
-    (Array.isArray(answers[current?._id]) && answers[current._id].length === 0);
+    current?.type === "ai_prompt"
+      ? !aiPromptReady(answers[current?._id], current)
+      : answers[current?._id] === undefined ||
+        answers[current?._id] === "" ||
+        (Array.isArray(answers[current?._id]) && answers[current._id].length === 0);
 
   function handleValue(v) {
     setAnswers((s) => ({ ...s, [current._id]: v }));
@@ -151,6 +167,12 @@ export function LessonRunner({ lesson, exercises, nextLesson }) {
     else if (current.type === "fill_blank") correct = answers[current._id] === current.solution?.answer;
     else if (current.type === "arrange") correct = JSON.stringify(answers[current._id]) === JSON.stringify(current.solution?.order);
     else if (current.type === "predict_output") correct = String(answers[current._id]).trim() === String(current.solution?.answer).trim();
+    else if (current.type === "ai_prompt") {
+      const v = answers[current._id];
+      const want = current.solution?.checklist ?? [];
+      const got = Array.isArray(v?.checks) ? v.checks : [];
+      correct = aiPromptReady(v, current) && JSON.stringify(got) === JSON.stringify(want);
+    }
     else if (current.type === "fix_bug" || current.type === "write_code") {
       const code = answers[current._id] ?? current.content?.starterCode ?? current.content?.code ?? "";
       const expected = current.content?.tests?.[0]?.expected ?? null;
@@ -335,6 +357,15 @@ export function LessonRunner({ lesson, exercises, nextLesson }) {
         ) : null}
         {current.type === "write_code" ? (
           <WriteCode exercise={current} value={answers[current._id]} onChange={handleValue} showResult={hasChecked} />
+        ) : null}
+        {current.type === "ai_prompt" ? (
+          <AiPrompt
+            exercise={current}
+            value={answers[current._id]}
+            onChange={handleValue}
+            showResult={hasChecked}
+            lessonId={lesson?._id ? String(lesson._id) : null}
+          />
         ) : null}
 
         <div className="mt-4">

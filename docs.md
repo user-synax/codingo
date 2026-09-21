@@ -159,7 +159,7 @@ The monorepo is organized as two separate folders under one repository: `fronten
 | **MobileMenu** | `components/landing/MobileMenu.js` | Client component — shadcn Sheet hamburger menu |
 | **Features** | `components/landing/Features.js` | Three feature pillars |
 | **LearningPath** | `components/landing/LearningPath.js` | Visual skill path with lesson node states |
-| **ExerciseTypes** | `components/landing/ExerciseTypes.js` | Six exercise type cards |
+| **ExerciseTypes** | `components/landing/ExerciseTypes.js` | Seven exercise type cards (incl. AI Prompt) |
 | **Community** | `components/landing/Community.js` | AI + community doubt helper section |
 | **Stats** | `components/landing/Stats.js` | Key metric numbers |
 | **CTA** | `components/landing/CTA.js` | Final conversion section |
@@ -544,7 +544,7 @@ bun dev          # Starts on http://localhost:3000
 
 ### Seeding Data
 
-Run `bun src/seed/seed.ts` in the backend to seed initial course content ("JavaScript Basics" with ~30 lessons).
+Run `bun src/seed/seed.ts` in the backend to seed course content (wipes courses first): "JS from Zero" (30 lessons) + "Code with AI" (16 lessons, incl. the live-AI `ai_prompt` type).
 
 ### Build Commands
 
@@ -617,7 +617,7 @@ From `DESIGN.md` and `PRD.md`:
 |---|---|---|
 | 1 | Foundation: monorepo, design.md, auth, base layout | ✅ Complete |
 | 2 | Lesson engine: exercise components, code runner, progress saving | 🔄 In progress |
-| 3 | Content: first course with ~30 lessons | ⏳ Pending |
+| 3 | Content: JS from Zero (30 lessons) + Code with AI (16 lessons) | ✅ Complete |
 | 4 | Gamification: XP, streaks, levels, badges | ⏳ Pending |
 | 5 | Community and AI: lesson threads, upvotes, AI helper | ⏳ Pending |
 | 6 | Polish and launch: responsive, performance, moderation, soft launch | ⏳ Pending |

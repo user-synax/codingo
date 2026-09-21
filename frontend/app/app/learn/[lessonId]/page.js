@@ -36,7 +36,13 @@ async function getNextLesson(lessonId) {
   });
   if (!res.ok) return null;
   const data = await res.json();
-  const all = (data.courses ?? []).flatMap((c) => (c.units ?? []).flatMap((u) => u.lessons ?? []));
+  // "Next" stays inside the same course so paths never leak into each other
+  const lessonCourse = (data.courses ?? []).find((c) =>
+    (c.units ?? []).some((u) => (u.lessons ?? []).some((l) => String(l._id) === String(lessonId))),
+  );
+  const all = lessonCourse
+    ? (lessonCourse.units ?? []).flatMap((u) => u.lessons ?? [])
+    : (data.courses ?? []).flatMap((c) => (c.units ?? []).flatMap((u) => u.lessons ?? []));
   const idx = all.findIndex((l) => String(l._id) === String(lessonId));
   if (idx < 0 || idx + 1 >= all.length) return null;
   const next = all[idx + 1];
@@ -51,6 +57,7 @@ function ViewOnlyExercise({ exercise, index }) {
     predict_output: "Predict output",
     fix_bug: "Fix the bug",
     write_code: "Write code",
+    ai_prompt: "AI prompt",
   }[exercise.type] ?? exercise.type;
 
   return (
@@ -113,6 +120,30 @@ function ViewOnlyExercise({ exercise, index }) {
           <code>{exercise.content.starterCode}</code>
         </pre>
       ) : null}
+      {exercise.type === "ai_prompt" && exercise.content?.scenario ? (
+        <div className="mt-3 rounded-[10px] border-2 border-spark-blue/40 bg-[#e6f4ff] px-3 py-2">
+          <p className="font-codingo-sans text-[13px] font-medium leading-[1.5] text-charcoal">{exercise.content.scenario}</p>
+        </div>
+      ) : null}
+      {exercise.type === "ai_prompt" && Array.isArray(exercise.content?.checklist) ? (
+        <div className="mt-3 flex flex-col gap-1.5">
+          {exercise.content.checklist.map((item, i) => {
+            const right = exercise.solution?.checklist?.[i];
+            return (
+              <div
+                key={i}
+                className={
+                  right
+                    ? "rounded-[10px] border-2 border-eager-green bg-storybook-green px-3 py-2 font-codingo-sans text-[13px] font-bold text-charcoal"
+                    : "rounded-[10px] border-2 border-faded-gray bg-paper-white px-3 py-2 font-codingo-sans text-[13px] text-charcoal opacity-70"
+                }
+              >
+                {item} — {right ? "Yes" : "No"}
+              </div>
+            );
+          })}
+        </div>
+      ) : null}
 
       <div className="mt-3 rounded-[10px] border-2 border-eager-green bg-storybook-green px-3 py-2">
         <p className="font-codingo-sans text-[13px] font-bold text-charcoal">
@@ -126,7 +157,9 @@ function ViewOnlyExercise({ exercise, index }) {
                   ? `Order ${JSON.stringify(exercise.solution?.order)}`
                   : exercise.type === "predict_output"
                     ? String(exercise.solution?.answer)
-                    : exercise.type === "fix_bug"
+                    : exercise.type === "ai_prompt"
+                      ? `Checklist: ${(exercise.solution?.checklist ?? []).map((c) => (c ? "Yes" : "No")).join(", ")}`
+                      : exercise.type === "fix_bug"
                       ? exercise.solution?.fixed?.slice(0, 80) + "…"
                       : exercise.solution?.code?.slice(0, 80) + "…"}
           </span>
