@@ -14,6 +14,7 @@ const LINK_COLUMNS = [
       { label: "Learn", href: "#learn" },
       { label: "Community", href: "#community" },
       { label: "Courses", href: "/app" },
+      { label: "Docs", href: "/docs" },
     ],
   },
   {

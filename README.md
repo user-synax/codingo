@@ -164,14 +164,16 @@ All visual decisions are governed by [`DESIGN.md`](DESIGN.md). Key highlights:
 
 ## 📖 Documentation
 
-Full project documentation is available in **[`docs.md`](docs.md)** covering:
+Full project documentation is available as a live site at **[/docs](https://codingo.synax.me/docs)** and as markdown in **[`docs.md`](docs.md)** covering:
 
-- Backend API routes (all 13 endpoints)
-- Database schema (7 Mongoose models)
-- Authentication flow (JWT + bcrypt + rate limiting)
-- Environment variables
-- Development setup & seeding
-- Design system tokens & principles
+- 30-lesson JS from Zero curriculum + 7 exercise types + offline-first flow
+- Full API reference (auth, courses, lessons, progress, community SSE, leaderboard, economy, AI, users)
+- 12 Mongoose models, indexes, and relationships
+- Auth (JWT + bcrypt + Google ID-token + rate limiting) and security guards
+- Gamification (XP/levels, streak+freeze, hearts/CC, daily goals, badges)
+- Community threads + AI hint-first helper (Groq/OpenRouter, budget 20/day, cache)
+- Offline IndexedDB v3 (4 stores) + Zustand + service worker PWA
+- Code runner (Web Worker sandbox, Python stub), Design tokens, and local setup
 
 ---
 
@@ -179,12 +181,13 @@ Full project documentation is available in **[`docs.md`](docs.md)** covering:
 
 | Phase | Status | Description |
 |-------|--------|-------------|
-| **Foundation** | ✅ Done | Monorepo, auth, base layout, landing page |
-| **Lesson Engine** | 🔄 In Progress | Exercise components, code runner, progress saving |
-| **Content** | ⏳ Planned | First course with ~30 lessons |
-| **Gamification** | ⏳ Planned | XP, streaks, levels, badges |
-| **Community + AI** | ⏳ Planned | Doubt threads, AI first responder |
-| **Polish & Launch** | ⏳ Planned | Responsive pass, performance, soft launch |
+| **Foundation** | ✅ Done | Monorepo, DESIGN.md, auth, base layout, landing |
+| **Lesson Engine** | ✅ Done | 7 exercise types, Monaco, Worker runner, drafts, offline queue |
+| **Content** | ✅ Done | JS from Zero — 30 lessons, 5 units |
+| **Gamification** | ✅ Done | XP, levels, streaks+freeze, hearts/CC, daily goals, badges, leaderboard |
+| **Community + AI** | ✅ Done | Threads/SSE, hint-first AI (Groq/OpenRouter), auto first reply |
+| **Polish & Launch** | ✅ Done | PWA, legal, SEO/sitemap/robots/OG, 3D button edge, motion |
+| **Launch** | ⏳ Next | Perf pass, moderation, soft launch |
 
 ---
 

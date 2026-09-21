@@ -7,6 +7,7 @@ import { MobileMenu } from "@/components/landing/MobileMenu";
    in MobileMenu, the only client component on the landing page. */
 
 export const NAV_LINKS = [
+  { label: "Docs", href: "/docs" },
   { label: "Learn", href: "#learn" },
   { label: "Community", href: "#community" },
 ];
