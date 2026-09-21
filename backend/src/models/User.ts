@@ -27,6 +27,14 @@ export interface IUser extends Document {
   countryCode?: string | null;
   language?: string | null; // e.g. "javascript"
   onboardingCompleted?: boolean;
+  // Economy — Codingo Cash, Hearts, Daily Goal, Freeze
+  cc: number; // Codingo Cash balance
+  hearts: number; // 0..3
+  heartsUpdatedAt: Date | null; // last regen timestamp
+  dailyGoalXp: number; // XP target per day (20..100)
+  dailyXp: number;
+  dailyXpDate: string | null; // YYYY-MM-DD
+  freezes: number; // streak freeze owned
   createdAt: Date;
   updatedAt: Date;
 }
@@ -76,6 +84,14 @@ const UserSchema = new Schema<IUser>(
     countryCode: { type: String, default: null, trim: true, uppercase: true, maxlength: 2 },
     language: { type: String, default: null, trim: true, lowercase: true },
     onboardingCompleted: { type: Boolean, default: false },
+    // Economy
+    cc: { type: Number, default: 50, min: 0 }, // starter cash
+    hearts: { type: Number, default: 3, min: 0, max: 3 },
+    heartsUpdatedAt: { type: Date, default: null },
+    dailyGoalXp: { type: Number, default: 50, min: 10, max: 200 },
+    dailyXp: { type: Number, default: 0, min: 0 },
+    dailyXpDate: { type: String, default: null }, // YYYY-MM-DD in user's timezone
+    freezes: { type: Number, default: 0, min: 0, max: 99 },
   },
   { timestamps: true },
 );

@@ -41,24 +41,24 @@ async function getLeaderboard(page) {
 function RankBadge({ rank }) {
   if (rank === 1)
     return (
-      <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#ffd700] text-charcoal shadow-[0_2px_0_rgba(0,0,0,0.15)]">
-        <Crown className="h-4 w-4" strokeWidth={2.4} aria-hidden="true" />
+      <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#ffd700] text-charcoal shadow-[0_2px_0_rgba(0,0,0,0.15)]">
+        <Crown className="h-5 w-5" strokeWidth={2.2} aria-hidden="true" />
       </span>
     );
   if (rank === 2)
     return (
-      <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#e8e8e8] text-charcoal shadow-[0_2px_0_rgba(0,0,0,0.12)]">
-        <Medal className="h-4 w-4" strokeWidth={2.4} aria-hidden="true" />
+      <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#e8e8e8] text-charcoal shadow-[0_2px_0_rgba(0,0,0,0.12)]">
+        <Medal className="h-5 w-5" strokeWidth={2.2} aria-hidden="true" />
       </span>
     );
   if (rank === 3)
     return (
-      <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#ffb86b] text-charcoal shadow-[0_2px_0_rgba(0,0,0,0.12)]">
-        <Trophy className="h-4 w-4" strokeWidth={2.4} aria-hidden="true" />
+      <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#ffb86b] text-charcoal shadow-[0_2px_0_rgba(0,0,0,0.12)]">
+        <Trophy className="h-5 w-5" strokeWidth={2.2} aria-hidden="true" />
       </span>
     );
   return (
-    <span className="inline-flex h-8 min-w-8 items-center justify-center rounded-full bg-faded-gray/15 px-2 font-codingo-sans text-[13px] font-black leading-none text-pencil-gray">
+    <span className="inline-flex h-9 min-w-9 items-center justify-center rounded-full bg-faded-gray/15 px-2 font-codingo-sans text-[13px] font-black leading-none text-pencil-gray">
       #{rank}
     </span>
   );
@@ -67,28 +67,26 @@ function RankBadge({ rank }) {
 function PodiumCard({ entry, place, highlight }) {
   const isFirst = place === 1;
   const border = isFirst
-    ? "border-eager-green bg-storybook-green/30 shadow-[0_4px_0_var(--color-deep-leaf)]"
-    : place === 2
-      ? "border-faded-gray bg-paper-white"
-      : "border-faded-gray bg-paper-white";
-  const height = isFirst ? "sm:min-h-[220px] sm:pt-7" : "sm:min-h-[190px] sm:pt-5";
+    ? "border-eager-green bg-storybook-green/25"
+    : "border-faded-gray bg-paper-white";
+  const height = isFirst ? "sm:min-h-[210px] sm:pt-6" : "sm:min-h-[185px] sm:pt-5";
   return (
     <div
       className={`relative flex flex-col items-center rounded-[20px] border-2 p-4 text-center sm:p-5 ${border} ${height} ${highlight ? "ring-2 ring-eager-green ring-offset-2 ring-offset-paper-white" : ""}`}
     >
       {isFirst ? (
-        <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[#ffd700] px-3 py-1 font-codingo-sans text-[11px] font-black uppercase tracking-[0.06em] leading-none text-charcoal shadow-[0_2px_0_rgba(0,0,0,0.15)]">
+        <span className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-[#ffd700] px-3 py-1 font-codingo-sans text-[11px] font-black uppercase tracking-[0.06em] leading-none text-charcoal shadow-[0_2px_0_rgba(0,0,0,0.15)]">
           Champion
         </span>
       ) : null}
       <div className="absolute -top-2 right-3 hidden sm:block" aria-hidden="true">
         <RankBadge rank={place} />
       </div>
-      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-paper-white text-pencil-gray sm:hidden" aria-hidden="true">
+      <div className="sm:hidden" aria-hidden="true">
         <RankBadge rank={place} />
       </div>
-      <Link href={`/u/${entry.username}`} className="mt-2 flex flex-col items-center gap-2">
-        <UserAvatar src={entry.avatar} name={entry.name} username={entry.username} boxClass="h-20 w-20 rounded-[20px] text-[26px] sm:h-[84px] sm:w-[84px] sm:rounded-[22px] sm:text-[32px] border-2 border-faded-gray" />
+      <Link href={`/u/${entry.username}`} className="mt-3 flex flex-col items-center gap-2">
+        <UserAvatar src={entry.avatar} name={entry.name} username={entry.username} boxClass="h-20 w-20 rounded-[20px] text-[26px] sm:h-[84px] sm:w-[84px] sm:rounded-[22px] sm:text-[32px] border-2 border-faded-gray/40" />
         <div>
           <p className="max-w-[140px] truncate font-codingo-sans text-[15px] font-black leading-[1.2] text-charcoal">{entry.name}</p>
           <p className="max-w-[140px] truncate font-codingo-sans text-[12px] font-bold leading-[1.2] text-pencil-gray">@{entry.username}</p>
@@ -100,14 +98,14 @@ function PodiumCard({ entry, place, highlight }) {
         </div>
       </Link>
       <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5">
-        <span className="inline-flex items-center gap-1 rounded-full bg-eager-green px-2.5 py-1 font-codingo-sans text-[12px] font-black leading-none text-paper-white">
-          <Zap className="h-3.5 w-3.5" strokeWidth={2.6} aria-hidden="true" />
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-eager-green px-2.5 py-1 font-codingo-sans text-[12px] font-black leading-none text-paper-white">
+          <Zap className="h-4 w-4" strokeWidth={2.6} aria-hidden="true" />
           {entry.xp} XP
         </span>
-        <span className="inline-flex items-center gap-1 rounded-full bg-charcoal px-2.5 py-1 font-codingo-sans text-[12px] font-black leading-none text-paper-white">Lv {entry.level}</span>
+        <span className="inline-flex items-center rounded-full bg-charcoal px-2.5 py-1 font-codingo-sans text-[12px] font-black leading-none text-paper-white">Lv {entry.level}</span>
       </div>
-      <div className="mt-1.5 flex items-center gap-1.5 font-codingo-sans text-[11px] font-bold leading-none text-pencil-gray">
-        <Flame className="h-3.5 w-3.5 text-[#ff9600]" strokeWidth={2.2} aria-hidden="true" />
+      <div className="mt-2 flex items-center gap-1.5 font-codingo-sans text-[11px] font-bold leading-none text-pencil-gray">
+        <Flame className="h-4 w-4 text-[#ff9600]" strokeWidth={2.2} aria-hidden="true" />
         {entry.streak?.count ?? 0} streak
         <span className="mx-1 h-1 w-1 rounded-full bg-faded-gray" aria-hidden="true" />
         {entry.badgesCount} badges
@@ -140,16 +138,15 @@ export default async function LeaderboardPage({ searchParams }) {
 
   return (
     <div className="mx-auto w-full max-w-[1100px]">
-      {/* Header */}
-      <header className="w-full overflow-hidden rounded-[16px] border-2 border-faded-gray bg-paper-white md:rounded-[20px]">
-        <div className="relative p-5 sm:p-6 md:p-7">
-          <div className="pointer-events-none absolute -right-14 -top-14 h-44 w-44 rounded-full bg-storybook-green/70" aria-hidden="true" />
-          <div className="pointer-events-none absolute -bottom-20 -left-12 h-36 w-36 rounded-full bg-[#fff4e6]" aria-hidden="true" />
-          <div className="pointer-events-none absolute right-24 top-6 hidden h-10 w-10 rounded-full border-2 border-faded-gray/30 lg:block" aria-hidden="true" />
-          <div className="relative flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      {/* Header — minimal: single subtle decoration, no overlap with chip row */}
+      <header className="relative isolate w-full overflow-hidden rounded-[16px] border-2 border-faded-gray bg-paper-white md:rounded-[20px]">
+        <div className="relative z-10 p-5 sm:p-6 md:p-7">
+          {/* single decoration — top-right, behind content only */}
+          <div className="pointer-events-none absolute -right-14 -top-14 z-0 h-44 w-44 rounded-full bg-storybook-green/50" aria-hidden="true" />
+          <div className="relative z-10 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="flex items-center gap-4">
-              <div className="flex h-[56px] w-[56px] shrink-0 items-center justify-center rounded-[16px] border-2 border-charcoal bg-[#ffd700] text-charcoal shadow-[0_4px_0_var(--color-charcoal)] sm:h-[64px] sm:w-[64px]">
-                <Trophy className="h-6 w-6 sm:h-7 sm:w-7" strokeWidth={2.2} aria-hidden="true" />
+              <div className="flex h-[60px] w-[60px] shrink-0 items-center justify-center rounded-[16px] border-2 border-charcoal bg-[#ffd700] text-charcoal shadow-[0_3px_0_var(--color-charcoal)] sm:h-[68px] sm:w-[68px]">
+                <Trophy className="h-9 w-9 sm:h-10 sm:w-10" strokeWidth={2.3} aria-hidden="true" />
               </div>
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
@@ -174,21 +171,22 @@ export default async function LeaderboardPage({ searchParams }) {
             </div>
           </div>
         </div>
-        <div className="flex items-center justify-between gap-3 border-t-2 border-faded-gray/40 bg-storybook-green/30 px-5 py-2.5 sm:px-6">
+        {/* chip row — solid, above decorations */}
+        <div className="relative z-10 flex items-center justify-between gap-3 border-t-2 border-faded-gray/30 bg-paper-white px-5 py-2.5 sm:px-6">
           <p className="font-codingo-sans text-[12px] font-bold uppercase leading-none tracking-[0.053em] text-pencil-gray">Ranked by XP · tie → earlier member wins</p>
-          <p className="hidden font-codingo-sans text-[12px] font-medium text-pencil-gray sm:block">
+          <p className="hidden shrink-0 font-codingo-sans text-[12px] font-medium text-pencil-gray sm:block">
             Page {page} of {totalPages}
           </p>
         </div>
       </header>
 
-      {/* Your rank — sticky card */}
+      {/* Your rank — minimal card */}
       {me && meRank > 0 ? (
-        <div className="mt-4 overflow-hidden rounded-[16px] border-2 border-eager-green bg-storybook-green/40 p-4 sm:p-5">
+        <div className="mt-4 overflow-hidden rounded-[16px] border-2 border-eager-green bg-storybook-green/30 p-4 sm:p-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] bg-eager-green text-paper-white shadow-[0_3px_0_var(--color-deep-leaf)]">
-                <Trophy className="h-5 w-5" strokeWidth={2.4} aria-hidden="true" />
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] bg-eager-green text-paper-white">
+                <Trophy className="h-6 w-6" strokeWidth={2.4} aria-hidden="true" />
               </span>
               <div className="min-w-0">
                 <p className="font-codingo-sans text-[12px] font-black uppercase tracking-[0.053em] leading-none text-pencil-gray">Your rank</p>
@@ -294,7 +292,7 @@ export default async function LeaderboardPage({ searchParams }) {
 
           {/* Table header */}
           <div className="mt-4 overflow-hidden rounded-[16px] border-2 border-faded-gray bg-paper-white">
-            <div className="flex items-center justify-between border-b-2 border-faded-gray bg-faded-gray/10 px-4 py-3 sm:px-5">
+            <div className="flex items-center justify-between border-b-2 border-faded-gray/20 bg-faded-gray/5 px-4 py-3 sm:px-5">
               <p className="font-codingo-sans text-[12px] font-black uppercase tracking-[0.053em] leading-none text-pencil-gray">
                 {isFirstPage && podium.length ? `Rank 4–${Math.min(total, LIMIT)}` : `Rank ${leaderboard[0]?.rank ?? 0}–${leaderboard[leaderboard.length - 1]?.rank ?? 0}`}
                 <span className="ml-2 font-medium normal-case tracking-normal text-pencil-gray">· {total} total</span>
@@ -302,23 +300,23 @@ export default async function LeaderboardPage({ searchParams }) {
               <p className="hidden font-codingo-sans text-[12px] font-bold text-pencil-gray sm:block">XP → Level · Streak · Badges</p>
             </div>
 
-            <ul className="divide-y-2 divide-faded-gray/30" aria-label="Leaderboard">
+            <ul className="divide-y divide-faded-gray/20" aria-label="Leaderboard">
               {list.map((entry) => {
                 const isMe = String(entry.id) === String(me?.id);
                 return (
                   <li
                     key={entry.id}
-                    className={isMe ? "flex items-center gap-3 bg-storybook-green/40 px-4 py-3 sm:px-5" : "flex items-center gap-3 bg-paper-white px-4 py-3 sm:px-5"}
+                    className={isMe ? "flex items-center gap-3 bg-storybook-green/30 px-4 py-3 sm:px-5" : "flex items-center gap-3 bg-paper-white px-4 py-3 sm:px-5 hover:bg-faded-gray/5"}
                   >
                     <span className="hidden w-[56px] shrink-0 items-center justify-center sm:flex">
                       <RankBadge rank={entry.rank} />
                     </span>
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-faded-gray/15 font-codingo-sans text-[12px] font-black leading-none text-pencil-gray sm:hidden">
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-faded-gray/15 font-codingo-sans text-[12px] font-black leading-none text-pencil-gray sm:hidden">
                       {entry.rank}
                     </span>
 
                     <Link href={`/u/${entry.username}`} className="flex min-w-0 flex-1 items-center gap-3">
-                      <UserAvatar src={entry.avatar} name={entry.name} username={entry.username} boxClass="h-12 w-12 rounded-[14px] text-[16px] sm:h-14 sm:w-14 sm:rounded-[16px] sm:text-[18px] border-2 border-faded-gray" />
+                      <UserAvatar src={entry.avatar} name={entry.name} username={entry.username} boxClass="h-14 w-14 rounded-[14px] text-[18px] sm:h-[56px] sm:w-[56px] sm:rounded-[16px] sm:text-[19px] border-2 border-faded-gray/30" />
                       <div className="min-w-0 flex-1">
                         <p className="truncate font-codingo-sans text-[14px] font-black leading-[1.2] text-charcoal sm:text-[15px]">
                           {entry.name}
@@ -332,15 +330,15 @@ export default async function LeaderboardPage({ searchParams }) {
                     </Link>
 
                     <div className="hidden shrink-0 items-center gap-2 sm:flex">
-                      <span className="inline-flex items-center gap-1 rounded-full bg-faded-gray/15 px-2.5 py-1.5 font-codingo-sans text-[12px] font-black leading-none text-charcoal">
-                        <Zap className="h-3.5 w-3.5 text-eager-green" strokeWidth={2.4} aria-hidden="true" />
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-faded-gray/10 px-2.5 py-1.5 font-codingo-sans text-[12px] font-black leading-none text-charcoal">
+                        <Zap className="h-4 w-4 text-eager-green" strokeWidth={2.4} aria-hidden="true" />
                         {entry.xp}
                       </span>
                       <span className="inline-flex min-w-[52px] justify-center rounded-full bg-charcoal px-2.5 py-1.5 font-codingo-sans text-[12px] font-black leading-none text-paper-white">
                         Lv {entry.level}
                       </span>
                       <span className="inline-flex items-center gap-1 rounded-full bg-[#fff4e6] px-2.5 py-1.5 font-codingo-sans text-[12px] font-black leading-none text-[#b91c1c]">
-                        <Flame className="h-3.5 w-3.5" strokeWidth={2.4} aria-hidden="true" />
+                        <Flame className="h-4 w-4" strokeWidth={2.4} aria-hidden="true" />
                         {entry.streak?.count ?? 0}
                       </span>
                     </div>
@@ -348,7 +346,7 @@ export default async function LeaderboardPage({ searchParams }) {
                     {/* Mobile compact stats */}
                     <div className="flex shrink-0 flex-col items-end gap-1 sm:hidden">
                       <span className="inline-flex items-center gap-1 rounded-full bg-eager-green px-2 py-1 font-codingo-sans text-[11px] font-black leading-none text-paper-white">
-                        <Zap className="h-3 w-3" strokeWidth={2.6} aria-hidden="true" />
+                        <Zap className="h-3.5 w-3.5" strokeWidth={2.6} aria-hidden="true" />
                         {entry.xp}
                       </span>
                       <span className="font-codingo-sans text-[11px] font-bold leading-none text-pencil-gray">Lv {entry.level}</span>
@@ -364,10 +362,10 @@ export default async function LeaderboardPage({ searchParams }) {
                   <span className="hidden w-[56px] shrink-0 items-center justify-center sm:flex">
                     <RankBadge rank={me.rank} />
                   </span>
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-eager-green font-codingo-sans text-[11px] font-black leading-none text-paper-white sm:hidden">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-eager-green font-codingo-sans text-[11px] font-black leading-none text-paper-white sm:hidden">
                     {me.rank}
                   </span>
-                  <UserAvatar src={me.avatar} name={me.name} username={me.username} boxClass="h-12 w-12 rounded-[14px] text-[16px] sm:h-14 sm:w-14 sm:rounded-[16px] sm:text-[18px] border-2 border-faded-gray" />
+                  <UserAvatar src={me.avatar} name={me.name} username={me.username} boxClass="h-14 w-14 rounded-[14px] text-[18px] sm:h-[56px] sm:w-[56px] sm:rounded-[16px] sm:text-[19px] border-2 border-faded-gray" />
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-codingo-sans text-[14px] font-black leading-[1.2] text-charcoal">
                       {me.name} <span className="rounded-full bg-eager-green px-2 py-0.5 font-codingo-sans text-[10px] font-black uppercase leading-none tracking-[0.04em] text-paper-white">You</span>
@@ -385,7 +383,7 @@ export default async function LeaderboardPage({ searchParams }) {
             ) : null}
           </div>
 
-          {/* Pagination */}
+          {/* Pagination — minimal */}
           <nav aria-label="Leaderboard pages" className="mt-4 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               {page > 1 ? (
@@ -440,7 +438,7 @@ export default async function LeaderboardPage({ searchParams }) {
                     aria-current={active ? "page" : undefined}
                     className={
                       active
-                        ? "inline-flex h-9 w-9 items-center justify-center rounded-[12px] border-2 border-eager-green bg-eager-green font-codingo-sans text-[13px] font-black leading-none text-paper-white shadow-[0_3px_0_var(--color-deep-leaf)]"
+                        ? "inline-flex h-9 w-9 items-center justify-center rounded-[12px] border-2 border-eager-green bg-eager-green font-codingo-sans text-[13px] font-black leading-none text-paper-white"
                         : "inline-flex h-9 w-9 items-center justify-center rounded-[12px] border-2 border-faded-gray bg-paper-white font-codingo-sans text-[13px] font-bold leading-none text-pencil-gray hover:border-charcoal hover:text-charcoal"
                     }
                   >

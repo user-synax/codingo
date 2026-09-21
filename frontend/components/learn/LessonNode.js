@@ -25,12 +25,18 @@ export function LessonNode({ lesson, status, href }) {
   const isCompleted = status === "completed";
   const Icon = getIcon(lesson.title);
   const [open, setOpen] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const isActive = open || hovered;
 
   return (
-    <div className="group relative z-10 flex flex-col items-center">
-      {/* Hover/tap card — desktop hover, mobile tap */}
+    <div
+      className={`group relative flex flex-col items-center ${isActive ? "z-30" : "z-10"}`}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      {/* Single popover — always at TOP of every lesson circle (bottom-full) so user sees perfectly; parent z-30 > sticky header z-20, popover z-[60] */}
       <div
-        className={`pointer-events-none absolute bottom-full left-1/2 z-20 mb-3 w-[260px] -translate-x-1/2 rounded-[14px] border-2 border-faded-gray bg-paper-white p-4 opacity-0 shadow-[0_8px_24px_rgba(0,0,0,0.12)] transition-all duration-[var(--duration-fast)] ease-[var(--ease-smooth-out)] ${open ? "!opacity-100 !pointer-events-auto" : "group-hover:opacity-100 group-hover:pointer-events-auto"} max-md:hidden`}
+        className={`pointer-events-none absolute bottom-full left-1/2 z-[60] mb-4 w-[min(260px,calc(100vw-24px))] -translate-x-1/2 rounded-[14px] border-2 border-faded-gray bg-paper-white p-4 opacity-0 shadow-[0_8px_24px_rgba(0,0,0,0.18)] transition-all duration-[var(--duration-fast)] ease-[var(--ease-smooth-out)] ${open ? "!opacity-100 !pointer-events-auto" : "group-hover:opacity-100 group-hover:pointer-events-auto"}`}
       >
         <div className="absolute left-1/2 top-full h-3 w-3 -translate-x-1/2 -translate-y-1.5 rotate-45 border-b-2 border-r-2 border-faded-gray bg-paper-white" aria-hidden="true" />
         <p className="font-codingo-sans text-[11px] font-bold uppercase tracking-[0.04em] text-pencil-gray">
@@ -68,17 +74,6 @@ export function LessonNode({ lesson, status, href }) {
           className="fixed inset-0 z-10 bg-transparent md:hidden"
         />
       ) : null}
-      <div
-        className={`absolute bottom-full left-1/2 z-20 mb-3 w-[260px] -translate-x-1/2 rounded-[14px] border-2 border-faded-gray bg-paper-white p-4 shadow-[0_8px_24px_rgba(0,0,0,0.12)] md:hidden ${open ? "block" : "hidden"}`}
-      >
-        <div className="absolute left-1/2 top-full h-3 w-3 -translate-x-1/2 -translate-y-1.5 rotate-45 border-b-2 border-r-2 border-faded-gray bg-paper-white" aria-hidden="true" />
-        <p className="font-codingo-sans text-[11px] font-bold uppercase tracking-[0.04em] text-pencil-gray">
-          {isLocked ? "Locked • " : isCompleted ? "Completed • " : "Ready • "}
-          {lesson.xpReward ?? 10} XP
-        </p>
-        <p className="mt-1 font-codingo-sans text-[15px] font-bold leading-[1.2] text-charcoal">{lesson.title}</p>
-        <p className="mt-1 font-codingo-sans text-[13px] font-medium leading-[1.4] text-pencil-gray">{lesson.description ?? ""}</p>
-      </div>
 
       <Link
         href={isLocked ? "#" : href}

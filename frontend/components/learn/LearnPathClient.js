@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Lock, Check, Play, Code2, Layers, GraduationCap, Rocket, ChevronDown, Sparkles, ArrowRight } from "lucide-react";
 import { LessonNode } from "@/components/learn/LessonNode";
 import { useProgressStore } from "@/stores/progressStore";
@@ -59,13 +59,16 @@ export function LearnPathClient({ courses, initialProgressMap, activeCourseId })
   const hydratedFromCache = useProgressStore((s) => s.hydratedFromCache);
   const pendingCount = useProgressStore((s) => s.pendingCount);
   const isOffline = useProgressStore((s) => s.isOffline);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
-  // IDB-first merge: store wins over server when hydrated, else server is truth
+  // IDB-first merge: store wins over server when hydrated, else server is truth.
+  // Guard with mounted so server and initial client render match (no hydration mismatch).
   const progressMap = useMemo(() => {
-    if (!hydratedFromCache || !byLessonId || Object.keys(byLessonId).length === 0) return initialProgressMap ?? {};
+    if (!mounted || !hydratedFromCache || !byLessonId || Object.keys(byLessonId).length === 0) return initialProgressMap ?? {};
     // Merge: server initial + live cache (live overwrites). This keeps offline progress visible.
     return { ...(initialProgressMap ?? {}), ...byLessonId };
-  }, [initialProgressMap, byLessonId, hydratedFromCache]);
+  }, [initialProgressMap, byLessonId, hydratedFromCache, mounted]);
 
   if (!courses.length) {
     return (
@@ -96,12 +99,12 @@ export function LearnPathClient({ courses, initialProgressMap, activeCourseId })
   const unitsCount = activeCourse.units?.length ?? 0;
   const ctaLabel = completedCount === 0 ? "Start learning" : completedCount === totalCount ? "Review lessons" : "Continue learning";
 
-  const usingCache = hydratedFromCache && Object.keys(byLessonId).length > 0;
+  const usingCache = mounted && hydratedFromCache && Object.keys(byLessonId).length > 0;
 
   return (
     <div className="mx-auto flex w-full max-w-[1100px] flex-col items-center">
-      {/* Sync status (only when offline or pending) */}
-      {(isOffline || pendingCount > 0) ? (
+      {/* Sync status (only when offline or pending) — mounted gate avoids hydration mismatch */}
+      {mounted && (isOffline || pendingCount > 0) ? (
         <div className="mb-4 flex w-full justify-end">
           <ProgressSyncBadge />
         </div>
@@ -198,30 +201,50 @@ export function LearnPathClient({ courses, initialProgressMap, activeCourseId })
             const state = st.percent === 100 ? "Completed" : i === 0 ? "Start here" : st.done > 0 ? "In progress" : "Next up";
             const TileIcon = m.Icon;
             return (
-              <Link key={String(c._id)} href={`/app/learn?course=${String(c._id)}`} aria-current={active ? "true" : undefined} className={active ? "group flex items-center gap-4 rounded-[20px] border-2 border-eager-green bg-storybook-green/40 p-4 transition-colors sm:gap-5 sm:p-5" : "group flex items-center gap-4 rounded-[20px] border-2 border-faded-gray bg-paper-white p-4 transition-colors hover:border-charcoal sm:gap-5 sm:p-5"}>
+              <Link
+                key={String(c._id)}
+                href={`/app/learn?course=${String(c._id)}`}
+                aria-current={active ? "true" : undefined}
+                className={
+                  active
+                    ? "group flex items-center gap-3 rounded-[16px] border-2 border-eager-green bg-storybook-green/40 p-3 sm:gap-4 sm:rounded-[20px] sm:p-4 transition-colors"
+                    : "group flex items-center gap-3 rounded-[16px] border-2 border-faded-gray bg-paper-white p-3 transition-colors hover:border-charcoal sm:gap-4 sm:rounded-[20px] sm:p-4"
+                }
+              >
                 <div className="relative shrink-0">
-                  <div className={`flex h-20 w-20 items-center justify-center rounded-[20px] border-2 border-charcoal sm:h-24 sm:w-24 ${m.tile} shadow-[0_4px_0_var(--color-charcoal)]`}>
-                    <TileIcon className={`h-10 w-10 sm:h-12 sm:w-12 ${m.tileIcon}`} strokeWidth={2.2} aria-hidden="true" />
+                  <div className={`flex h-14 w-14 items-center justify-center rounded-[16px] border-2 border-charcoal sm:h-16 sm:w-16 sm:rounded-[20px] ${m.tile} shadow-[0_3px_0_var(--color-charcoal)]`}>
+                    <TileIcon className={`h-[22px] w-[22px] sm:h-[26px] sm:w-[26px] ${m.tileIcon}`} strokeWidth={2.2} aria-hidden="true" />
                   </div>
-                  <span className="absolute -bottom-2 -right-2 rounded-full border-2 border-charcoal bg-paper-white px-2 py-0.5 font-codingo-sans text-[11px] font-black leading-none text-charcoal">{m.mark}</span>
-                  {active ? <span className="absolute -left-2 -top-2 flex h-7 w-7 items-center justify-center rounded-full border-2 border-paper-white bg-eager-green text-paper-white" aria-label="Currently viewing"><Check className="h-4 w-4" strokeWidth={3} aria-hidden="true" /></span> : null}
+                  <span className="absolute -bottom-1.5 -right-1.5 rounded-full border-2 border-charcoal bg-paper-white px-1.5 py-0.5 font-codingo-sans text-[10px] font-black leading-none text-charcoal sm:-bottom-2 sm:-right-2 sm:px-2 sm:text-[11px]">{m.mark}</span>
+                  {active ? (
+                    <span className="absolute -left-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-full border-2 border-paper-white bg-eager-green text-paper-white sm:-left-2 sm:-top-2 sm:h-7 sm:w-7" aria-label="Currently viewing">
+                      <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4" strokeWidth={3} aria-hidden="true" />
+                    </span>
+                  ) : null}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="font-codingo-sans text-[18px] font-black leading-[1.2] text-charcoal sm:text-[19px]">{c.title}</p>
-                    <span className={`rounded-full px-2.5 py-1 font-codingo-sans text-[10px] font-black uppercase leading-none tracking-[0.05em] ${STATE_PILL[state]}`}>{state}</span>
+                  <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                    <p className="font-codingo-sans text-[16px] font-black leading-[1.2] text-charcoal sm:text-[17px]">{c.title}</p>
+                    <span className={`rounded-full px-2 py-1 font-codingo-sans text-[10px] font-black uppercase leading-none tracking-[0.05em] ${STATE_PILL[state]}`}>{state}</span>
                   </div>
-                  <p className="mt-1 line-clamp-2 font-codingo-sans text-[13px] font-medium leading-[1.45] text-pencil-gray">{c.description}</p>
-                  <p className="mt-1.5 font-codingo-sans text-[12px] font-bold text-pencil-gray">{units} units · {st.total} lessons</p>
+                  <p className="mt-1 line-clamp-2 font-codingo-sans text-[12px] font-medium leading-[1.45] text-pencil-gray sm:text-[13px]">{c.description}</p>
+                  <p className="mt-1 font-codingo-sans text-[11px] font-bold text-pencil-gray sm:text-[12px]">{units} units · {st.total} lessons</p>
                   <div className="mt-2 flex items-center gap-2">
-                    <div className="h-2.5 min-w-0 flex-1 overflow-hidden rounded-full bg-faded-gray/20">
+                    <div className="h-2 min-w-0 flex-1 overflow-hidden rounded-full bg-faded-gray/20 sm:h-2.5">
                       <div className={`h-full rounded-full ${st.percent === 100 ? "bg-charcoal" : "bg-eager-green"}`} style={{ width: `${st.percent}%` }} />
                     </div>
-                    <span className="shrink-0 font-codingo-sans text-[12px] font-black text-charcoal">{st.done}/{st.total}</span>
+                    <span className="shrink-0 font-codingo-sans text-[11px] font-black text-charcoal sm:text-[12px]">{st.done}/{st.total}</span>
                   </div>
                 </div>
-                <span aria-hidden="true" className={active ? "hidden h-10 w-10 shrink-0 items-center justify-center rounded-full bg-eager-green text-paper-white sm:flex" : "hidden h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-faded-gray text-pencil-gray transition-colors group-hover:border-charcoal group-hover:text-charcoal sm:flex"}>
-                  <ArrowRight className="h-5 w-5" strokeWidth={2.5} />
+                <span
+                  aria-hidden="true"
+                  className={
+                    active
+                      ? "hidden h-9 w-9 shrink-0 items-center justify-center rounded-full bg-eager-green text-paper-white sm:flex"
+                      : "hidden h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-faded-gray text-pencil-gray transition-colors group-hover:border-charcoal group-hover:text-charcoal sm:flex"
+                  }
+                >
+                  <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={2.5} />
                 </span>
               </Link>
             );
@@ -257,7 +280,7 @@ export function LearnPathClient({ courses, initialProgressMap, activeCourseId })
               </div>
             </div>
 
-            <div className="relative mt-6 flex w-full justify-center overflow-hidden py-2 md:mt-4">
+            <div className="relative mt-6 flex w-full justify-center overflow-visible py-2 md:mt-4">
               <div className="pointer-events-none absolute bottom-[40px] left-1/2 top-[40px] z-0 w-[14px] -translate-x-1/2 rounded-full bg-faded-gray/15 md:bottom-[48px] md:top-[48px]" aria-hidden="true" />
               <div className="flex w-full flex-col items-center gap-7 md:hidden">
                 {withStatus.map(({ lesson, status }, i) => (

@@ -11,6 +11,7 @@ import progressRouter from "./routes/progress.js";
 import communityRouter from "./routes/community.js";
 import usersRouter from "./routes/users.js";
 import leaderboardRouter from "./routes/leaderboard.js";
+import economyRouter from "./routes/economy.js";
 import aiRouter from "./routes/ai.js";
 
 export function createApp() {
@@ -71,6 +72,7 @@ export function createApp() {
   app.use("/api/threads", communityRouter);
   app.use("/api/users", usersRouter);
   app.use("/api/leaderboard", leaderboardRouter);
+  app.use("/api/economy", economyRouter);
   app.use("/api/ai", aiRouter);
 
   // 404

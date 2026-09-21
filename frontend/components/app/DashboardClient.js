@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { getXpProgress } from "@/lib/level";
-import { ArrowRight, BookOpenCheck, Flame, MessagesSquare, Play, Trophy, Zap } from "lucide-react";
+import { ArrowRight, BookOpenCheck, Flame, MessagesSquare, Play, Trophy, Zap, Heart, Gem, Snowflake, Target, ShoppingBag } from "lucide-react";
 import { useProgressStore } from "@/stores/progressStore";
 import { ProgressSyncBadge } from "@/components/progress/ProgressHydrator";
 
@@ -17,20 +17,22 @@ export function DashboardClient({ user: initialUser, courses, initialProgress })
   const userStats = useProgressStore((s) => s.userStats);
   const pendingCount = useProgressStore((s) => s.pendingCount);
   const isOffline = useProgressStore((s) => s.isOffline);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
-  // IDB-first progress merge
+  // IDB-first progress merge — gated by mounted to avoid hydration mismatch
   const progress = useMemo(() => {
-    if (!hydrated || !byLessonId || Object.keys(byLessonId).length === 0) return initialProgress ?? [];
+    if (!mounted || !hydrated || !byLessonId || Object.keys(byLessonId).length === 0) return initialProgress ?? [];
     // Merge list: map initialProgress by lessonId, then overwrite with live byLessonId values
     const map = new Map();
     for (const p of initialProgress ?? []) map.set(String(p.lessonId), p);
     for (const [lid, doc] of Object.entries(byLessonId)) map.set(String(lid), doc);
     return Array.from(map.values());
-  }, [initialProgress, byLessonId, hydrated]);
+  }, [initialProgress, byLessonId, hydrated, mounted]);
 
-  // Use live user stats if available (XP/level/streak may have updated offline)
+  // Use live user stats if available (XP/level/streak may have updated offline) — mounted gate
   const user = useMemo(() => {
-    if (!userStats || typeof userStats !== "object") return initialUser;
+    if (!mounted || !userStats || typeof userStats !== "object") return initialUser;
     // userStats may be full user doc or just stats; merge with initial
     const stats = userStats.stats ?? userStats;
     return {
@@ -42,7 +44,7 @@ export function DashboardClient({ user: initialUser, courses, initialProgress })
       level: typeof stats.level === "number" ? stats.level : initialUser?.level,
       badges: stats.badges ?? initialUser?.badges,
     };
-  }, [initialUser, userStats]);
+  }, [initialUser, userStats, mounted]);
 
   const xpInfo = getXpProgress(user?.xp ?? 0);
 
@@ -93,13 +95,75 @@ export function DashboardClient({ user: initialUser, courses, initialProgress })
     { label: "Lessons", value: `${completedCount}/${totalCount}`, sub: `${percent}% across ${courses.length} path${courses.length === 1 ? "" : "s"}`, icon: BookOpenCheck, tile: "bg-[#f3e8ff] text-[#9333ea]" },
   ];
 
+  // Economy — daily goal ring
+  const dailyGoalXp = user?.dailyGoalXp ?? 50;
+  const dailyXp = user?.dailyXp ?? 0;
+  const dailyPct = Math.min(100, Math.round((dailyXp / Math.max(1, dailyGoalXp)) * 100));
+  const hearts = user?.hearts ?? 3;
+  const cc = user?.cc ?? 50;
+  const freezes = user?.freezes ?? 0;
+  const isHeartsOut = hearts <= 0;
+
   return (
     <div className="mx-auto w-full max-w-[1100px]">
-      {(isOffline || pendingCount > 0) ? (
+      {mounted && (isOffline || pendingCount > 0) ? (
         <div className="mb-3 flex justify-end">
           <ProgressSyncBadge />
         </div>
       ) : null}
+      {/* Economy strip — responsive: stacked on mobile, row on sm+ (h-[22px] icons per request) */}
+      <div className="mb-3 grid grid-cols-3 gap-2 sm:gap-3">
+        <Link href={isHeartsOut ? "/app/shop" : "/app/learn"} className={`flex flex-col sm:flex-row items-center gap-1.5 sm:gap-2.5 rounded-[14px] sm:rounded-[16px] border-2 px-2 py-2.5 sm:px-3 sm:py-3 text-center sm:text-left ${isHeartsOut ? "border-[#ffb3b3] bg-[#ffe6e6] animate-pulse" : "border-faded-gray bg-paper-white hover:border-charcoal"}`}>
+          <span className={`flex h-10 w-10 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-[12px] ${isHeartsOut ? "bg-[#c9184a] text-paper-white" : "bg-[#ffe6f0] text-[#c9184a] border-2 border-[#ffb3c6]"}`}>
+            <Heart className="h-[22px] w-[22px]" strokeWidth={2.2} fill={hearts > 0 ? "currentColor" : "none"} aria-hidden="true" />
+          </span>
+          <div className="min-w-0 leading-none">
+            <p className="font-codingo-sans text-[11px] sm:text-[13px] font-black leading-none text-charcoal">{hearts}/3 Hearts</p>
+            <p className="mt-0.5 font-codingo-sans text-[10px] sm:text-[11px] font-bold leading-none text-pencil-gray">{isHeartsOut ? "Refill" : "1 / 4h"} · <span className="text-spark-blue">Shop</span></p>
+          </div>
+        </Link>
+        <Link href="/app/shop" className="flex flex-col sm:flex-row items-center gap-1.5 sm:gap-2.5 rounded-[14px] sm:rounded-[16px] border-2 border-faded-gray bg-paper-white px-2 py-2.5 sm:px-3 sm:py-3 hover:border-charcoal text-center sm:text-left">
+          <span className="flex h-10 w-10 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-[12px] bg-[#fff8e6] text-charcoal border-2 border-[#ffec99]">
+            <Gem className="h-[22px] w-[22px]" strokeWidth={2.2} aria-hidden="true" />
+          </span>
+          <div className="min-w-0 leading-none">
+            <p className="font-codingo-sans text-[11px] sm:text-[13px] font-black leading-none text-charcoal">{cc} CC</p>
+            <p className="mt-0.5 font-codingo-sans text-[10px] sm:text-[11px] font-bold leading-none text-pencil-gray">5 / lesson · <span className="text-spark-blue">Shop</span></p>
+          </div>
+        </Link>
+        <Link href="/app/shop" className="flex flex-col sm:flex-row items-center gap-1.5 sm:gap-2.5 rounded-[14px] sm:rounded-[16px] border-2 border-faded-gray bg-paper-white px-2 py-2.5 sm:px-3 sm:py-3 hover:border-charcoal text-center sm:text-left">
+          <span className="flex h-10 w-10 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-[12px] bg-[#e6f7ff] text-spark-blue border-2 border-[#b3e5ff]">
+            <Snowflake className="h-[22px] w-[22px]" strokeWidth={2.2} aria-hidden="true" />
+          </span>
+          <div className="min-w-0 leading-none">
+            <p className="font-codingo-sans text-[11px] sm:text-[13px] font-black leading-none text-charcoal">{freezes} Freeze</p>
+            <p className="mt-0.5 font-codingo-sans text-[10px] sm:text-[11px] font-bold leading-none text-pencil-gray">50 CC each</p>
+          </div>
+        </Link>
+      </div>
+
+      {/* Daily goal card */}
+      <div className="mb-4 flex flex-col gap-3 rounded-[16px] border-2 border-faded-gray bg-paper-white p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] bg-storybook-green text-eager-green border-2 border-[#b5e39a]">
+            <Target className="h-[22px] w-[22px]" strokeWidth={2.2} aria-hidden="true" />
+          </span>
+          <div>
+            <p className="font-codingo-sans text-[14px] font-black leading-[1.1] text-charcoal">Daily Goal</p>
+            <p className="font-codingo-sans text-[12px] font-bold leading-none text-pencil-gray">{dailyXp}/{dailyGoalXp} XP · {dailyPct}%</p>
+          </div>
+        </div>
+        <div className="flex flex-1 items-center gap-3 sm:ml-4 sm:max-w-[360px]">
+          <div className="h-3 flex-1 overflow-hidden rounded-full bg-faded-gray/20">
+            <div className={`h-full rounded-full transition-all duration-500 ${dailyXp >= dailyGoalXp ? "bg-eager-green" : "bg-[#ffd60a]"}`} style={{ width: `${dailyPct}%` }} />
+          </div>
+          <span className={`shrink-0 rounded-full px-3 py-1 font-codingo-sans text-[11px] font-black leading-none ${dailyXp >= dailyGoalXp ? "bg-eager-green text-paper-white" : "bg-[#ffd60a] text-charcoal"}`}>{dailyXp >= dailyGoalXp ? "Done!" : `${dailyGoalXp - dailyXp} XP left`}</span>
+        </div>
+        <Link href="/app/shop" className="hidden sm:inline-flex items-center gap-1 rounded-full bg-charcoal px-4 py-2 font-codingo-sans text-[12px] font-black leading-none text-paper-white hover:brightness-110">
+          <ShoppingBag className="h-4 w-4" strokeWidth={2.2} aria-hidden="true" /> Change goal
+        </Link>
+      </div>
+
       <div className="relative overflow-hidden rounded-[16px] border-2 border-faded-gray bg-paper-white p-[20px] sm:p-[28px] md:rounded-[20px]">
         <div className="pointer-events-none absolute -right-14 -top-14 h-44 w-44 rounded-full bg-storybook-green/70" aria-hidden="true" />
         <div className="pointer-events-none absolute -bottom-20 -left-12 h-36 w-36 rounded-full bg-spark-blue/10" aria-hidden="true" />
@@ -109,7 +173,7 @@ export function DashboardClient({ user: initialUser, courses, initialProgress })
           <p className="mt-2 max-w-[560px] font-codingo-sans text-[15px] font-medium leading-[1.4] text-pencil-gray">
             {completedCount === 0 ? "Bite-sized lessons, real code in your browser. Your first lesson takes 2 minutes." : (user?.streak?.count ?? 0) > 0 ? `You're on a ${user.streak.count}-day streak with ${completedCount} lessons done. One more today?` : `You've finished ${completedCount} lesson${completedCount === 1 ? "" : "s"}. Pick up where you left off.`}
           </p>
-          {hydrated && isOffline ? <p className="mt-2 font-codingo-sans text-[12px] font-bold text-[#e8590c]">Offline — showing cached progress. Your saves will sync when you’re back online.</p> : null}
+          {mounted && hydrated && isOffline ? <p className="mt-2 font-codingo-sans text-[12px] font-bold text-[#e8590c]">Offline — showing cached progress. Your saves will sync when you’re back online.</p> : null}
           <div className="mt-5 flex flex-wrap gap-3">
             <Link href={nextLesson ? `/app/learn/${String(nextLesson._id)}` : "/app/learn"} className="codingo-btn codingo-btn-primary inline-flex items-center gap-2 rounded-[12px] border-2 border-eager-green bg-eager-green px-6 py-3 font-codingo-sans text-[15px] font-bold uppercase leading-[1.33] tracking-[0.053em] text-paper-white hover:brightness-95">
               <Play className="h-4 w-4 fill-paper-white" strokeWidth={2.5} aria-hidden="true" />

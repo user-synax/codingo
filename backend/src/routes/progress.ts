@@ -9,6 +9,7 @@ import { XPEvent } from "../models/XPEvent.js";
 import { calcStreak } from "../utils/streak.js";
 import { getLevelForXpPrecise, getXpForLevel } from "../utils/level.js";
 import { checkBadges } from "../utils/badges.js";
+import { CC_PER_LESSON, CC_PERFECT_BONUS } from "../utils/hearts.js";
 
 const router = Router();
 
@@ -68,9 +69,11 @@ router.post("/", requireAuth, async (req: AuthedRequest, res) => {
 
   // Award XP + streak + badges + level only on first completion
   let xpAwarded = 0;
+  let ccAwarded = 0;
   let newBadges: string[] = [];
   let levelUp: { from: number; to: number } | null = null;
   let streakUpdated = null;
+  let freezeUsed = false;
   if (nowCompleted && !wasCompleted) {
     const perExercise = 5 * Math.min(correctCount, total);
     const lessonBonus = 10;
@@ -86,7 +89,9 @@ router.post("/", requireAuth, async (req: AuthedRequest, res) => {
     if (user) {
       const oldXp = user.xp ?? 0;
       const oldLevel = getLevelForXpPrecise(oldXp);
-      const streak = calcStreak(user);
+      // Streak with freeze support
+      const streakRes = calcStreak(user as any);
+      const streak = { count: streakRes.count, lastActiveDate: streakRes.lastActiveDate };
       const newXp = oldXp + xpAwarded;
       const newLevel = getLevelForXpPrecise(newXp);
 
@@ -103,9 +108,27 @@ router.post("/", requireAuth, async (req: AuthedRequest, res) => {
 
       if (newLevel > oldLevel) levelUp = { from: oldLevel, to: newLevel };
 
+      // CC award — Earn per lesson (5 + 10 perfect)
+      ccAwarded = CC_PER_LESSON + (score === 100 ? CC_PERFECT_BONUS : 0);
+
+      // Daily XP (timezone-aware)
+      const tz = user.timezone ?? "Asia/Kolkata";
+      const todayStr = new Intl.DateTimeFormat("en-CA", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+      if (user.dailyXpDate === todayStr) {
+        user.dailyXp = (user.dailyXp ?? 0) + xpAwarded;
+      } else {
+        user.dailyXp = xpAwarded;
+        user.dailyXpDate = todayStr;
+      }
+
       user.xp = newXp;
       user.level = newLevel;
       user.streak = streak;
+      if (streakRes.freezeUsed) {
+        freezeUsed = true;
+        user.freezes = Math.max(0, (user.freezes ?? 0) - 1);
+      }
+      user.cc = (user.cc ?? 0) + ccAwarded;
       streakUpdated = streak;
       await user.save();
     }
@@ -115,6 +138,8 @@ router.post("/", requireAuth, async (req: AuthedRequest, res) => {
   return res.json({
     progress: doc,
     xpAwarded,
+    ccAwarded,
+    freezeUsed,
     newBadges,
     levelUp,
     streak: streakUpdated ?? user?.streak ?? null,
@@ -125,6 +150,11 @@ router.post("/", requireAuth, async (req: AuthedRequest, res) => {
           level: user.level,
           streak: user.streak,
           badges: user.badges,
+          cc: (user as unknown as { cc?: number }).cc ?? 0,
+          hearts: (user as unknown as { hearts?: number }).hearts ?? 3,
+          freezes: (user as unknown as { freezes?: number }).freezes ?? 0,
+          dailyGoalXp: (user as unknown as { dailyGoalXp?: number }).dailyGoalXp ?? 50,
+          dailyXp: (user as unknown as { dailyXp?: number }).dailyXp ?? 0,
         }
       : null,
   });

@@ -14,6 +14,7 @@ import {
 import { signJwt, cookieName, cookieOptions, clearCookieOptions } from "../utils/jwt.js";
 import { env, isGoogleConfigured } from "../config/env.js";
 import { requireAuth } from "../middleware/auth.js";
+import { calcHeartsState } from "../utils/hearts.js";
 
 const router = Router();
 
@@ -46,6 +47,13 @@ function toPublicUser(doc: {
   bio?: string | null;
   isPrivate?: boolean;
   googleId?: string | null;
+  cc?: number;
+  hearts?: number;
+  heartsUpdatedAt?: Date | null;
+  dailyGoalXp?: number;
+  dailyXp?: number;
+  dailyXpDate?: string | null;
+  freezes?: number;
 }) {
   return {
     id: String(doc._id),
@@ -66,6 +74,14 @@ function toPublicUser(doc: {
     onboardingCompleted: Boolean(doc.onboardingCompleted),
     bio: doc.bio ?? null,
     isPrivate: Boolean(doc.isPrivate),
+    // Economy
+    cc: doc.cc ?? 50,
+    hearts: doc.hearts ?? 3,
+    heartsUpdatedAt: doc.heartsUpdatedAt ?? null,
+    dailyGoalXp: doc.dailyGoalXp ?? 50,
+    dailyXp: doc.dailyXp ?? 0,
+    dailyXpDate: doc.dailyXpDate ?? null,
+    freezes: doc.freezes ?? 0,
     // True while the user still holds an auto-generated `google_user_*` name —
     // the onboarding wizard asks them to pick a real username in that case.
     needsUsername: doc.username.startsWith(TEMP_USERNAME_PREFIX),
@@ -162,12 +178,33 @@ router.post("/logout", (req, res) => {
   return res.json({ message: "Logged out." });
 });
 
-// GET /api/auth/me
+// GET /api/auth/me — also applies passive hearts regen and daily reset view
 router.get("/me", requireAuth, async (req, res) => {
   const userId = (req as unknown as { userId: string }).userId;
-  const user = await User.findById(userId).lean();
+  const user = await User.findById(userId);
   if (!user) return res.status(404).json({ message: "User not found." });
-  return res.json({ user: toPublicUser(user) });
+
+  // Passive hearts regen
+  const heartsState = calcHeartsState(user as any, new Date());
+  let heartsChanged = false;
+  if (heartsState.needsSave || !user.heartsUpdatedAt) {
+    user.hearts = heartsState.hearts;
+    user.heartsUpdatedAt = heartsState.heartsUpdatedAt;
+    heartsChanged = true;
+  }
+
+  // Daily XP view reset (don't persist until next progress; just reflect)
+  const tz = user.timezone ?? "Asia/Kolkata";
+  const todayStr = new Intl.DateTimeFormat("en-CA", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+  let dailyXpView = user.dailyXp ?? 0;
+  if (user.dailyXpDate !== todayStr) dailyXpView = 0;
+
+  if (heartsChanged) await user.save();
+
+  const plain = user.toObject();
+  // Override dailyXp for display if new day
+  if (plain.dailyXpDate !== todayStr) plain.dailyXp = 0;
+  return res.json({ user: toPublicUser(plain) });
 });
 
 // PATCH /api/auth/onboarding — mandatory after signup, guarded by auth
