@@ -362,7 +362,7 @@ export default function DocsPage() {
               </div>
             </div>
             <p className="mt-2 font-codingo-sans text-[12px] font-medium leading-[1.5] text-pencil-gray">
-              Seed: <Kbd>bun src/seed/seed.ts</Kbd> wipes then inserts exactly this curriculum. Order matters — nodes increment strictly by <Kbd>order</Kbd>.
+              Seed: <Kbd>bun src/seed/seed.ts --course js-from-zero</Kbd> upserts exactly this curriculum. Order matters — nodes increment strictly by <Kbd>order</Kbd>.
             </p>
           </section>
 
@@ -835,9 +835,9 @@ bun dev                    # http://localhost:3000`}
               <Card className="p-4">
                 <h3 className="font-codingo-sans text-[13px] font-black text-charcoal">Seed the course</h3>
                 <div className="mt-2">
-                  <CodeBlock code={`cd backend\nbun src/seed/seed.ts`} />
+                  <CodeBlock code={`cd backend\nbun src/seed/seed.ts --list\nbun src/seed/seed.ts --course js-from-zero`} />
                 </div>
-                <p className="mt-2 font-codingo-sans text-[12px] font-medium leading-[1.5] text-pencil-gray">Wipes <Kbd>Course/Unit/Lesson/Exercise</Kbd> then inserts JS from Zero exactly as documented above.</p>
+                <p className="mt-2 font-codingo-sans text-[12px] font-medium leading-[1.5] text-pencil-gray">Scoped per course and upserted: only the selected course is written, existing lessons keep their <Kbd>_id</Kbd>, and learner progress survives.</p>
               </Card>
               <Card className="p-4">
                 <h3 className="font-codingo-sans text-[13px] font-black text-charcoal">Build</h3>

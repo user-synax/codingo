@@ -1,18 +1,149 @@
+import type { Types } from "mongoose";
 import { connectDb, disconnectDb } from "../config/db.js";
 import { Course } from "../models/Course.js";
 import { Unit } from "../models/Unit.js";
 import { Lesson } from "../models/Lesson.js";
 import { Exercise } from "../models/Exercise.js";
+import { Progress } from "../models/Progress.js";
+import type { CourseSpec } from "./courses/types.js";
+import { pythonFromZero } from "./courses/pythonFromZero.js";
 
-async function main() {
-  await connectDb();
+/* ---------------------------------------------------------------------------
+   Course seeding
 
-  await Exercise.deleteMany({});
-  await Lesson.deleteMany({});
-  await Unit.deleteMany({});
-  await Course.deleteMany({});
+   Seed one course at a time so a content update can never touch another course
+   or wipe somebody's progress:
 
-  const course = await Course.create({
+     bun src/seed/seed.ts --course js-from-zero      rebuild one course
+     bun src/seed/seed.ts --all                      rebuild every course
+     bun src/seed/seed.ts --list                     list the slugs
+
+   Progress documents reference Lesson._id, so every node is UPSERTED on a
+   natural key (course title, courseId + unit title, unitId + lesson title,
+   lessonId + exercise order) instead of being deleted and recreated. Existing
+   lessons keep their _id, so completed learners stay completed.
+
+   The old blanket `deleteMany({})` across all four collections is gone.
+   Lessons that the seed no longer defines are removed afterwards by
+   pruneCourse() — and only when nobody has progress on them.
+--------------------------------------------------------------------------- */
+
+type SeedResult = {
+  slug: string;
+  title: string;
+  units: number;
+  lessons: number;
+  exercises: number;
+  keepUnitTitles: string[];
+  keepLessonKeys: Set<string>;
+};
+
+/* Unit titles are only unique inside a course and lesson titles only inside a
+   unit, so the prune key pairs them with a separator that cannot appear in a
+   title we author. */
+const lessonKey = (unitTitle: string, lessonTitle: string) => `${unitTitle}\u0000${lessonTitle}`;
+
+async function upsertCourse(attrs: {
+  title: string;
+  language: string;
+  description: string;
+  order: number;
+}) {
+  const course = await Course.findOneAndUpdate(
+    { title: attrs.title },
+    { $set: attrs },
+    { new: true, upsert: true },
+  );
+  if (!course) throw new Error(`Failed to upsert course "${attrs.title}".`);
+  return course;
+}
+
+async function upsertUnit(attrs: {
+  courseId: Types.ObjectId;
+  title: string;
+  description?: string;
+  order: number;
+}) {
+  const unit = await Unit.findOneAndUpdate(
+    { courseId: attrs.courseId, title: attrs.title },
+    { $set: attrs },
+    { new: true, upsert: true },
+  );
+  if (!unit) throw new Error(`Failed to upsert unit "${attrs.title}".`);
+  return unit;
+}
+
+async function upsertLesson(attrs: {
+  unitId: Types.ObjectId;
+  title: string;
+  description?: string;
+  order: number;
+  xpReward: number;
+}) {
+  const lesson = await Lesson.findOneAndUpdate(
+    { unitId: attrs.unitId, title: attrs.title },
+    { $set: attrs },
+    { new: true, upsert: true },
+  );
+  if (!lesson) throw new Error(`Failed to upsert lesson "${attrs.title}".`);
+  return lesson;
+}
+
+/* Exercises are pure content — nothing references Exercise._id — so they are
+   matched by (lessonId, order) and replaced in place. */
+async function upsertExercise(lessonId: Types.ObjectId, order: number, doc: unknown) {
+  return Exercise.findOneAndUpdate(
+    { lessonId, order },
+    { $set: { lessonId, order, ...(doc as object) } },
+    { new: true, upsert: true },
+  );
+}
+
+/* Delete the lessons this course no longer defines — but never one a learner
+   has progress on. Those are reported instead so a human can rename or merge
+   them deliberately. */
+async function pruneCourse(result: SeedResult) {
+  const course = await Course.findOne({ title: result.title }).lean();
+  if (!course) return { deleted: 0, skipped: [] as string[] };
+
+  const units = await Unit.find({ courseId: course._id }).lean();
+  let deleted = 0;
+  const skipped: string[] = [];
+
+  for (const unit of units) {
+    const lessons = await Lesson.find({ unitId: unit._id }).lean();
+    for (const lesson of lessons) {
+      if (result.keepLessonKeys.has(lessonKey(unit.title, lesson.title))) continue;
+      const learnerProgress = await Progress.countDocuments({ lessonId: lesson._id });
+      if (learnerProgress > 0) {
+        skipped.push(`${unit.title} / "${lesson.title}" kept — ${learnerProgress} learner progress record(s)`);
+        continue;
+      }
+      await Exercise.deleteMany({ lessonId: lesson._id });
+      await Lesson.deleteOne({ _id: lesson._id });
+      deleted += 1;
+    }
+  }
+
+  /* Units the seed dropped go away only once they hold no lessons — which
+     includes lessons that were kept above because learners finished them. */
+  for (const unit of units) {
+    if (result.keepUnitTitles.includes(unit.title)) continue;
+    const remaining = await Lesson.countDocuments({ unitId: unit._id });
+    if (remaining === 0) {
+      await Unit.deleteOne({ _id: unit._id });
+    } else {
+      skipped.push(`unit "${unit.title}" kept — still holds ${remaining} lesson(s)`);
+    }
+  }
+
+  return { deleted, skipped };
+}
+
+/* ---------------- Course 1: JS from Zero ---------------- */
+
+async function seedJsFromZero(): Promise<SeedResult> {
+  const course = await upsertCourse({
     title: "JS from Zero",
     language: "javascript",
     description: "From zero to advanced — no prior code needed. Learn JavaScript from scratch with bite-sized lessons.",
@@ -29,7 +160,7 @@ async function main() {
 
   const units = [];
   for (const u of unitsData) {
-    const doc = await Unit.create({ courseId: course._id, ...u });
+    const doc = await upsertUnit({ courseId: course._id, ...u });
     units.push(doc);
   }
 
@@ -75,7 +206,7 @@ async function main() {
   const lessons = [];
   let exTotal = 0;
   for (const ld of lessonsData) {
-    const l = await Lesson.create({
+    const l = await upsertLesson({
       unitId: units[ld.unit]._id,
       title: ld.title,
       description: ld.description,
@@ -85,7 +216,10 @@ async function main() {
     lessons.push(l);
   }
 
-  const mk = async (lessonId: unknown, order: number, doc: unknown) => { exTotal++; return Exercise.create({ lessonId, order, ...(doc as object) }); };
+  const mk = async (lessonId: Types.ObjectId, order: number, doc: unknown) => {
+    exTotal++;
+    return upsertExercise(lessonId, order, doc);
+  };
 
   // Helper to keep gentle→code-heavy: early lessons more choice/fill, later more code
   // U1 — gentle
@@ -336,10 +470,23 @@ async function main() {
   await mk(lessons[29]._id, 5, { type: "predict_output", prompt: "First todo?", content: { snippet: "let t=[\"a\"];\nt.push(\"b\");\nconsole.log(t[0]);", options: ["a", "b", "a,b", "2"] }, solution: { answer: "a" }, explanation: "Index 0 stays a.", hints: ["First."] });
   await mk(lessons[29]._id, 6, { type: "write_code", prompt: "Remove last todo, log length 1", content: { starterCode: "let todos=[\"a\",\"b\"];\n___;\nconsole.log(todos.length);", tests: [{ expected: "1" }] }, solution: { code: "let todos=[\"a\",\"b\"]; todos.pop(); console.log(todos.length);" }, explanation: "pop removes last.", hints: ["pop."] });
 
-  // ---- Course 2: Code with AI — standalone newbie-to-expert ----
+  return {
+    slug: "js-from-zero",
+    title: course.title,
+    units: units.length,
+    lessons: lessons.length,
+    exercises: exTotal,
+    keepUnitTitles: unitsData.map((u) => u.title),
+    keepLessonKeys: new Set(lessonsData.map((ld) => lessonKey(unitsData[ld.unit].title, ld.title))),
+  };
+}
+
+/* ---------------- Course 2: Code with AI ---------------- */
+
+async function seedCodeWithAi(): Promise<SeedResult> {
   // Teaches thinking, prompting, and building WITH ai. Uses the 6 classic
   // types plus the new ai_prompt type (live AI answer + graded checklist).
-  const aiCourse = await Course.create({
+  const aiCourse = await upsertCourse({
     title: "Code with AI",
     language: "ai",
     description: "From zero to expert — no code needed to start. Learn to think, prompt, and build with AI as your coding buddy.",
@@ -355,7 +502,7 @@ async function main() {
 
   const aiUnits = [];
   for (const u of aiUnitsData) {
-    const doc = await Unit.create({ courseId: aiCourse._id, ...u });
+    const doc = await upsertUnit({ courseId: aiCourse._id, ...u });
     aiUnits.push(doc);
   }
 
@@ -385,7 +532,7 @@ async function main() {
 
   const aiLessons = [];
   for (const ld of aiLessonsData) {
-    const l = await Lesson.create({
+    const l = await upsertLesson({
       unitId: aiUnits[ld.unit]._id,
       title: ld.title,
       description: ld.description,
@@ -394,6 +541,12 @@ async function main() {
     });
     aiLessons.push(l);
   }
+
+  let exTotal = 0;
+  const mk = async (lessonId: Types.ObjectId, order: number, doc: unknown) => {
+    exTotal++;
+    return upsertExercise(lessonId, order, doc);
+  };
 
   // U1L1 — What Is AI, Really?
   await mk(aiLessons[0]._id, 0, { type: "multiple_choice", prompt: "What is AI, really?", content: { options: ["Magic that knows everything", "A helper that learned patterns from tons of examples", "A tiny human inside your phone", "A faster calculator"], correctIndex: 1 }, solution: { correctIndex: 1 }, explanation: "AI spots patterns in examples — no magic, no tiny human.", hints: ["Think examples, not magic."] });
@@ -511,8 +664,161 @@ async function main() {
   await mk(aiLessons[15]._id, 3, { type: "multiple_choice", prompt: "Keep the streak alive by…", content: { options: ["One lesson a day", "One lesson a year", "Never opening the app", "Deleting lessons"], correctIndex: 0 }, solution: { correctIndex: 0 }, explanation: "Daily reps.", hints: ["Daily."] });
   await mk(aiLessons[15]._id, 4, { type: "fill_blank", prompt: "From newbie to ___ — with AI beside you", content: { code: "From newbie to ___ — with AI beside you.", blank: "expert", options: ["expert", "potato", "printer", "ghost"] }, solution: { answer: "expert" }, explanation: "Expert. You made it.", hints: ["You."] });
 
-  console.log(`Seeded courses: ${course.title} (30 lessons) + ${aiCourse.title} (16 lessons), ${exTotal} exercises total.`);
-  await disconnectDb();
+  return {
+    slug: "code-with-ai",
+    title: aiCourse.title,
+    units: aiUnits.length,
+    lessons: aiLessons.length,
+    exercises: exTotal,
+    keepUnitTitles: aiUnitsData.map((u) => u.title),
+    keepLessonKeys: new Set(aiLessonsData.map((ld) => lessonKey(aiUnitsData[ld.unit].title, ld.title))),
+  };
+}
+
+/* ---------------- Data-driven courses ---------------- */
+
+/* Walks a CourseSpec and upserts it with the same helpers the hand-written
+   courses use, so a course authored as data is exactly as safe to reseed.
+   Array order decides `order`, which makes mismatched unit/lesson indices
+   impossible to author. */
+async function seedCourseFromSpec(spec: CourseSpec): Promise<SeedResult> {
+  const course = await upsertCourse(spec.course);
+  const keepUnitTitles: string[] = [];
+  const keepLessonKeys = new Set<string>();
+  let units = 0;
+  let lessons = 0;
+  let exercises = 0;
+
+  for (const [unitIndex, unitSpec] of spec.units.entries()) {
+    const unit = await upsertUnit({
+      courseId: course._id,
+      title: unitSpec.title,
+      description: unitSpec.description,
+      order: unitIndex,
+    });
+    units += 1;
+    keepUnitTitles.push(unit.title);
+
+    for (const [lessonIndex, lessonSpec] of unitSpec.lessons.entries()) {
+      const lesson = await upsertLesson({
+        unitId: unit._id,
+        title: lessonSpec.title,
+        description: lessonSpec.description,
+        order: lessonIndex,
+        xpReward: lessonSpec.xpReward,
+      });
+      lessons += 1;
+      keepLessonKeys.add(lessonKey(unit.title, lesson.title));
+
+      for (const [exerciseIndex, exercise] of lessonSpec.exercises.entries()) {
+        exercises += 1;
+        await upsertExercise(lesson._id, exerciseIndex, {
+          type: exercise.type,
+          prompt: exercise.prompt,
+          content: exercise.content,
+          solution: exercise.solution,
+          explanation: exercise.explanation,
+          hints: exercise.hints,
+        });
+      }
+    }
+  }
+
+  return {
+    slug: spec.slug,
+    title: course.title,
+    units,
+    lessons,
+    exercises,
+    keepUnitTitles,
+    keepLessonKeys,
+  };
+}
+
+/* ---------------- Runner ---------------- */
+
+type CourseSeed = { title: string; run: () => Promise<SeedResult> };
+
+const COURSE_SEEDS: Record<string, CourseSeed> = {
+  "js-from-zero": { title: "JS from Zero", run: seedJsFromZero },
+  "code-with-ai": { title: "Code with AI", run: seedCodeWithAi },
+  "python-from-zero": { title: "Python from Zero", run: () => seedCourseFromSpec(pythonFromZero) },
+};
+
+const USAGE = `Seed a single course without touching any other course or learner progress.
+
+  bun src/seed/seed.ts --course <slug>   rebuild one course
+  bun src/seed/seed.ts --all             rebuild every course
+  bun src/seed/seed.ts --list            list the available slugs
+
+How it stays safe:
+  * Only the selected course's units, lessons and exercises are written.
+  * Nodes are upserted on a natural key, so existing lessons keep their _id and
+    learner Progress keeps pointing at them.
+  * Lessons dropped from the seed are deleted only when no learner has progress
+    on them; otherwise they are reported and left untouched.`;
+
+function parseArgs(argv: string[]) {
+  const parsed: { course: string | null; all: boolean; list: boolean; help: boolean } = {
+    course: null,
+    all: false,
+    list: false,
+    help: false,
+  };
+  for (let i = 0; i < argv.length; i += 1) {
+    const arg = argv[i];
+    if (arg === "--course" || arg === "-c") parsed.course = argv[i + 1] ?? null;
+    else if (arg.startsWith("--course=")) parsed.course = arg.slice("--course=".length);
+    else if (arg === "--all") parsed.all = true;
+    else if (arg === "--list") parsed.list = true;
+    else if (arg === "--help" || arg === "-h") parsed.help = true;
+    else if (!arg.startsWith("-") && !parsed.course) parsed.course = arg;
+  }
+  return parsed;
+}
+
+async function main() {
+  const args = parseArgs(process.argv.slice(2));
+
+  if (args.list) {
+    console.log("Available courses:");
+    for (const [slug, seed] of Object.entries(COURSE_SEEDS)) {
+      console.log(`  ${slug.padEnd(16)} ${seed.title}`);
+    }
+    return;
+  }
+
+  /* No target means no write. Seeding is never implicit. */
+  if (args.help || (!args.course && !args.all)) {
+    console.log(USAGE);
+    if (!args.help) process.exitCode = 1;
+    return;
+  }
+
+  const selected: [string, CourseSeed][] = args.all
+    ? Object.entries(COURSE_SEEDS)
+    : Object.entries(COURSE_SEEDS).filter(([slug]) => slug === args.course);
+
+  if (!selected.length) {
+    console.error(`Unknown course "${args.course}". Run with --list to see the available slugs.`);
+    process.exitCode = 1;
+    return;
+  }
+
+  await connectDb();
+  try {
+    for (const [slug, seed] of selected) {
+      const result = await seed.run();
+      const prune = await pruneCourse(result);
+      const pruned = prune.deleted ? `, pruned ${prune.deleted} stale lesson(s)` : "";
+      console.log(
+        `Seeded ${slug}: ${result.units} units, ${result.lessons} lessons, ${result.exercises} exercises${pruned}.`,
+      );
+      for (const note of prune.skipped) console.log(`  kept: ${note}`);
+    }
+  } finally {
+    await disconnectDb();
+  }
 }
 
 main().catch((e) => {

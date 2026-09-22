@@ -2,7 +2,7 @@
 
 const LANGUAGES = [
   { id: "javascript", label: "JavaScript", desc: "For web & apps", icon: "JS", color: "#f7df1e", available: true },
-  { id: "python", label: "Python", desc: "Coming soon", icon: "Py", color: "#3776ab", available: false },
+  { id: "python", label: "Python", desc: "For AI & data", icon: "Py", color: "#3776ab", available: true },
   { id: "java", label: "Java", desc: "Coming soon", icon: "Ja", color: "#007396", available: false },
   { id: "cpp", label: "C++", desc: "Coming soon", icon: "C+", color: "#00599c", available: false },
 ];

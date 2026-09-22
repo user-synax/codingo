@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState, useEffect } from "react";
-import { Check, Play, Code2, Layers, GraduationCap, Rocket, ChevronDown, Sparkles, ArrowRight } from "lucide-react";
+import { Check, Play, Code2, Layers, GraduationCap, Rocket, ChevronDown, Sparkles, Terminal, ArrowRight } from "lucide-react";
 import { LessonCard } from "@/components/learn/LessonCard";
 import { useProgressStore } from "@/stores/progressStore";
 import { ProgressSyncBadge } from "@/components/progress/ProgressHydrator";
@@ -19,15 +19,16 @@ const UNIT_COLORS = [
 const UNIT_ICONS = [Code2, Layers, GraduationCap, Layers, Rocket];
 
 const COURSE_META = {
-  javascript: { mark: "JS", chip: "javascript", badge: "bg-charcoal", markColor: "text-[#f7df1e]", Icon: Code2, tile: "bg-[#f7df1e]", tileIcon: "text-charcoal" },
-  ai: { mark: "AI", chip: "AI coding", badge: "bg-spark-blue", markColor: "text-paper-white", Icon: Sparkles, tile: "bg-spark-blue", tileIcon: "text-paper-white" },
+  javascript: { mark: "JS", chip: "javascript", badge: "bg-charcoal", markColor: "text-[#f7df1e]", dot: "bg-[#f7df1e]", Icon: Code2, tile: "bg-[#f7df1e]", tileIcon: "text-charcoal" },
+  ai: { mark: "AI", chip: "AI coding", badge: "bg-spark-blue", markColor: "text-paper-white", dot: "bg-spark-blue", Icon: Sparkles, tile: "bg-spark-blue", tileIcon: "text-paper-white" },
+  python: { mark: "Py", chip: "python", badge: "bg-[#3776ab]", markColor: "text-[#ffd43b]", dot: "bg-[#ffd43b]", Icon: Terminal, tile: "bg-[#3776ab]", tileIcon: "text-paper-white" },
 };
 
 function courseMeta(course) {
   const m = COURSE_META[course?.language];
   if (m) return m;
   const mark = String(course?.title ?? "??").replace(/[^a-zA-Z]/g, "").slice(0, 2).toUpperCase() || "??";
-  return { mark, chip: course?.language ?? "course", badge: "bg-charcoal", markColor: "text-paper-white", Icon: GraduationCap, tile: "bg-charcoal", tileIcon: "text-paper-white" };
+  return { mark, chip: course?.language ?? "course", badge: "bg-charcoal", markColor: "text-paper-white", dot: "bg-paper-white", Icon: GraduationCap, tile: "bg-charcoal", tileIcon: "text-paper-white" };
 }
 
 const STATE_PILL = {
@@ -122,7 +123,7 @@ export function LearnPathClient({ courses, initialProgressMap, activeCourseId })
       <div className="mx-auto w-full max-w-[720px]">
         <h1 className="font-codingo-sans text-[28px] font-bold leading-[1.2] text-charcoal">Learn</h1>
         <p className="mt-2 font-codingo-sans text-[15px] font-medium leading-[1.4] text-pencil-gray">
-          No courses yet — run <code className="rounded bg-faded-gray/20 px-1 py-0.5 font-mono text-[13px]">bun src/seed/seed.ts</code> in backend to seed JS from Zero.
+          No courses yet — run <code className="rounded bg-faded-gray/20 px-1 py-0.5 font-mono text-[13px]">bun src/seed/seed.ts --course js-from-zero</code> in backend to seed JS from Zero.
         </p>
       </div>
     );
@@ -179,7 +180,7 @@ export function LearnPathClient({ courses, initialProgressMap, activeCourseId })
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-charcoal px-3 py-1 font-codingo-sans text-[11px] font-black uppercase leading-none tracking-[0.06em] text-paper-white">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#f7df1e]" aria-hidden="true" />
+                  <span className={`h-1.5 w-1.5 rounded-full ${meta.dot}`} aria-hidden="true" />
                   {meta.chip}
                 </span>
                 <span className="inline-flex items-center rounded-full border-2 border-faded-gray/40 bg-paper-white px-3 py-1 font-codingo-sans text-[11px] font-bold leading-none text-pencil-gray">

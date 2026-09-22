@@ -171,7 +171,7 @@ Monorepo: `frontend/` (Next.js 16 App Router, port 3000) and `backend/` (Express
 │   │   │   ├── ai.ts         # chatComplete (Groq→OpenRouter fallback), isAiConfigured, TUTOR_SYSTEM, runnerPrompt/threadPrompt, budget, cache, scheduleAiFirstReply, ensureAiUser
 │   │   │   └── communityEvents.ts # in-process pub/sub for SSE (emit/subscribe)
 │   │   └── seed/
-│   │       └── seed.ts       # Wipes + seeds Course/Units/Lessons/Exercises — JS from Zero (30 lessons)
+│   │       └── seed.ts       # Per-course seeder — `--course <slug>`, upserts so learner progress survives
 │   └── package.json
 ├── docs.md                   # This file (also rendered at /docs)
 ├── PRD.md                    # Product requirements + roadmap
@@ -464,7 +464,9 @@ Logout:   POST /logout → clearCookie
 
 `Course (order) → Unit (courseId, order) → Lesson (unitId, order, xpReward 10–20) → Exercise (lessonId, order, type, prompt, content, solution, explanation, hints[])`
 
-**Seeded content** (`backend/src/seed/seed.ts` — `bun src/seed/seed.ts`, wipes collections first):
+**Seeded content** (`backend/src/seed/seed.ts` — `bun src/seed/seed.ts --course <slug>`, scoped + upserted per course so existing learner progress survives). Slugs: `js-from-zero` (30 lessons), `code-with-ai` (16), `python-from-zero` (40) — see `--list`.
+
+The Python course is authored as data in `backend/src/seed/courses/pythonFromZero.ts` and walked by `seedCourseFromSpec`, so array order decides `order` and unit/lesson indices cannot drift. Because the browser runner cannot execute Python yet, that course uses only the exercise types that grade without it — `multiple_choice`, `fill_blank`, `arrange`, `predict_output`, `ai_prompt`. Run `bun run seed:validate` to check course data invariants without a database.
 
 - Course: **JS from Zero** — `From zero to advanced — no prior code needed. Learn JavaScript from scratch with bite-sized lessons.` (`javascript`, order 0)
 - 5 Units:
@@ -687,8 +689,19 @@ Visit `http://localhost:3000`. The `proxy` + `GET /api/auth/me` flow handles red
 
 ```bash
 cd backend
-bun src/seed/seed.ts   # wipes Course/Unit/Lesson/Exercise then inserts JS from Zero 30 lessons
+bun src/seed/seed.ts --list                  # show the available course slugs
+bun src/seed/seed.ts --course js-from-zero   # rebuild one course
+bun src/seed/seed.ts --all                   # rebuild every course
 ```
+
+Seeding is scoped and idempotent. Only the selected course's units, lessons and
+exercises are written, and every node is upserted on a natural key (course title,
+`courseId` + unit title, `unitId` + lesson title, `lessonId` + exercise order) —
+so existing lessons keep their `_id` and learner `Progress` keeps pointing at
+them. Lessons dropped from the seed are deleted only when no learner has
+progress on them; otherwise they are reported and left untouched. Running it
+with no flag prints the usage and exits non-zero, so a bare run can never wipe
+content by accident.
 
 ### Build
 
